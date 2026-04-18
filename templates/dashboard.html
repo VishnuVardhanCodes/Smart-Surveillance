@@ -51,34 +51,32 @@
                 <div class="header-info">
                     <h1>Surveillance Overview</h1>
                     <div class="date-time">
-                        <i class="far fa-calendar-alt"></i>
                         <span id="current-date">Saturday, April 18, 2026</span>
-                        <span style="opacity: 0.3;">|</span>
-                        <i class="far fa-clock"></i>
+                        <span style="opacity: 0.3; margin: 0 10px;">|</span>
                         <span id="current-time">07:32:35 PM</span>
                     </div>
-                </div>
-                <div class="status-badge">
-                    <span class="badge live">● LIVE FEED</span>
+                    <div style="margin-top: 25px;">
+                        <span style="background: #fee2e2; color: #dc2626; padding: 6px 16px; border-radius: 20px; font-weight: 800; font-size: 0.7rem; letter-spacing: 1px;">● LIVE FEED</span>
+                    </div>
                 </div>
             </header>
 
             <!-- Stats Grid -->
             <div class="stats-tiles">
                 <div class="tile animate-in" style="animation-delay: 0.2s;">
+                    <div class="tile-icon"><i class="fas fa-user-plus"></i></div>
                     <div class="tile-label">Total Entries</div>
                     <div class="tile-value" id="count-in">0</div>
-                    <div class="tile-icon"><i class="fas fa-user-plus"></i></div>
                 </div>
                 <div class="tile animate-in" style="animation-delay: 0.3s;">
+                    <div class="tile-icon"><i class="fas fa-user-minus"></i></div>
                     <div class="tile-label">Total Exits</div>
                     <div class="tile-value" id="count-out">0</div>
-                    <div class="tile-icon"><i class="fas fa-user-minus"></i></div>
                 </div>
                 <div class="tile animate-in" style="animation-delay: 0.4s;">
+                    <div class="tile-icon"><i class="fas fa-users"></i></div>
                     <div class="tile-label">Current Occupancy</div>
                     <div class="tile-value" id="occupancy">0</div>
-                    <div class="tile-icon"><i class="fas fa-users"></i></div>
                 </div>
             </div>
 
