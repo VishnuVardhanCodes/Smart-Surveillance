@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Search | SmartEye AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-eye-slash"></i>
+                <span>SmartEye AI</span>
+            </div>
+            
+            <nav>
+                <a href="/" class="nav-link">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/history" class="nav-link">
+                    <i class="fas fa-clock-rotate-left"></i>
+                    <span>History</span>
+                </a>
+                <a href="/search" class="nav-link active">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <span>Search</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-card">
+                    <div class="status-dot online"></div>
+                    <span>System Active</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header>
+                <div class="header-info">
+                    <h1>Intelligent Search</h1>
+                    <div class="date-time">Query surveillance database with filters</div>
+                </div>
+            </header>
+
+            <!-- Search Filters -->
+            <div class="search-box">
+                <div class="form-row">
+                    <div class="field">
+                        <label>Filter by Date</label>
+                        <input type="date" id="search-date">
+                    </div>
+                    <div class="field">
+                        <label>Select Time (HH:MM)</label>
+                        <input type="text" id="search-time" placeholder="e.g. 14:30">
+                    </div>
+                    <div class="field">
+                        <label>License Plate Number</label>
+                        <input type="text" id="search-plate" placeholder="e.g. MH12AB1234">
+                    </div>
+                    <button onclick="performSearch()" class="btn-search">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-list-check"></i> Query Results</h3>
+                    <div id="results-count" class="badge">Awaiting query...</div>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Timestamp</th>
+                                <th>Category</th>
+                                <th>Plate</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="search-results">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-med); padding: 3rem;">
+                                    <i class="fas fa-search-plus" style="font-size: 2rem; margin-bottom: 1rem; display: block; opacity: 0.5;"></i>
+                                    Input search parameters above to view results
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal" onclick="this.style.display='none'">
+        <div style="position: relative; text-align: center;">
+            <img id="modalImg" src="" alt="Evidence">
+            <p id="modalCaption" style="margin-top: 10px; color: var(--text-high); font-weight: 500;">Evidence Snapshot</p>
+        </div>
+    </div>
+
+    <script>
+        async function performSearch() {
+            const date = document.getElementById('search-date').value;
+            const time = document.getElementById('search-time').value;
+            const plate = document.getElementById('search-plate').value;
+            const resultsBody = document.getElementById('search-results');
+            const countBadge = document.getElementById('results-count');
+
+            // Show loading state
+            resultsBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 3rem;">Searching records...</td></tr>`;
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date, time, plate_number: plate })
+                });
+
+                const results = await response.json();
+                countBadge.innerText = `${results.length} records found`;
+
+                if (results.length === 0) {
+                    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-med);">No records found matching these filters.</td></tr>`;
+                    return;
+                }
+
+                resultsBody.innerHTML = results.map(row => `
+                    <tr>
+                        <td>#${row.id}</td>
+                        <td>
+                            <div style="font-weight: 500;">${row.date}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-med);">${row.time}</div>
+                        </td>
+                        <td><span class="type-tag ${row.object_type}">${row.object_type.charAt(0).toUpperCase() + row.object_type.slice(1)}</span></td>
+                        <td>${row.plate_number ? `<code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);">${row.plate_number}</code>` : '<span style="color: var(--text-low);">N/A</span>'}</td>
+                        <td>
+                            <button class="btn-search" style="padding: 6px 12px; font-size: 0.8rem;" onclick="viewEvidence('${row.image_path}', '#${row.id}')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error("Search failed:", error);
+                resultsBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--danger);">An error occurred while searching.</td></tr>`;
+            }
+        }
+
+        function viewEvidence(path, id) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImg');
+            const caption = document.getElementById('modalCaption');
+            // Ensure path is local-absolute and uses forward slashes
+            const webPath = '/' + path.replace(/\\/g, '/');
+            img.src = webPath; 
+            caption.innerText = `Evidence Snapshot for Record ${id}`;
+            modal.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>

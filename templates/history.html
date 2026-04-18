@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Archive | SmartEye AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-eye-slash"></i>
+                <span>SmartEye AI</span>
+            </div>
+            
+            <nav>
+                <a href="/" class="nav-link">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/history" class="nav-link active">
+                    <i class="fas fa-clock-rotate-left"></i>
+                    <span>History</span>
+                </a>
+                <a href="/search" class="nav-link">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <span>Search</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-card">
+                    <div class="status-dot online"></div>
+                    <span>System Active</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header>
+                <div class="header-info">
+                    <h1>Detection Archive</h1>
+                    <div class="date-time">Recently logged activity across all cameras</div>
+                </div>
+            </header>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-database"></i> All Records</h3>
+                    <div class="badge">{{ detections|length }} entries found</div>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Timestamp</th>
+                                <th>Category</th>
+                                <th>License Plate</th>
+                                <th>Evidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in detections %}
+                            <tr>
+                                <td>#{{ record.id }}</td>
+                                <td>
+                                    <div style="font-weight: 500;">{{ record.date }}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-med);">{{ record.time }}</div>
+                                </td>
+                                <td>
+                                    <span class="type-tag {{ record.object_type }}">
+                                        {{ record.object_type|capitalize }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if record.plate_number %}
+                                        <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);">
+                                            {{ record.plate_number }}
+                                        </code>
+                                    {% else %}
+                                        <span style="color: var(--text-low);">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn-search" style="padding: 6px 12px; font-size: 0.8rem;" onclick="showImage('{{ record.image_path }}')">
+                                        <i class="fas fa-image"></i> View
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal" onclick="this.style.display='none'">
+        <div style="position: relative; text-align: center;">
+            <img id="modalImg" src="" alt="Detection Snapshot">
+            <p style="margin-top: 10px; color: var(--text-high); font-weight: 500;">Detection Evidence</p>
+        </div>
+    </div>
+
+    <script>
+        function showImage(path) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImg');
+            // Ensure path is local-absolute and uses forward slashes
+            const webPath = '/' + path.replace(/\\/g, '/');
+            img.src = webPath; 
+            modal.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
