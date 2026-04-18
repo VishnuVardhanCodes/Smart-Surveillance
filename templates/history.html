@@ -61,6 +61,7 @@
                                 <th>ID</th>
                                 <th>Timestamp</th>
                                 <th>Category</th>
+                                <th>Event</th>
                                 <th>License Plate</th>
                                 <th>Evidence</th>
                             </tr>
@@ -77,6 +78,13 @@
                                     <span class="type-tag {{ record.object_type }}">
                                         {{ record.object_type|capitalize }}
                                     </span>
+                                </td>
+                                <td>
+                                    {% if record.event_type == 'Entry' %}
+                                        <span style="color: var(--success); font-weight: 600;"><i class="fas fa-sign-in-alt"></i> IN</span>
+                                    {% else %}
+                                        <span style="color: var(--danger); font-weight: 600;"><i class="fas fa-sign-out-alt"></i> OUT</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if record.plate_number %}

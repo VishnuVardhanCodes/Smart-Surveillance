@@ -20,6 +20,8 @@ class DatabaseManager:
                 date TEXT NOT NULL,
                 time TEXT NOT NULL,
                 object_type TEXT NOT NULL,
+                event_type TEXT DEFAULT 'Entry',
+                track_id INTEGER,
                 plate_number TEXT,
                 image_path TEXT NOT NULL
             )
@@ -27,7 +29,7 @@ class DatabaseManager:
         conn.commit()
         conn.close()
 
-    def insert_detection(self, object_type, image_path, plate_number=None):
+    def insert_detection(self, object_type, image_path, event_type='Entry', track_id=None, plate_number=None):
         """Insert a new detection record into the database."""
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d")
@@ -36,9 +38,9 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO detections (date, time, object_type, plate_number, image_path)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (date_str, time_str, object_type, plate_number, image_path))
+            INSERT INTO detections (date, time, object_type, event_type, track_id, plate_number, image_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (date_str, time_str, object_type, event_type, track_id, plate_number, image_path))
         conn.commit()
         conn.close()
         return True

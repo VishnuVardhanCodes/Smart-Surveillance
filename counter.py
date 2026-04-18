@@ -15,8 +15,11 @@ class PeopleCounter:
     def count(self, tracks, frame_width, frame_height):
         """
         Update counts based on track movements across the line.
+        Returns (current_in, current_out, crossed_in_ids, crossed_out_ids)
         """
         line_coord = self.line_position * (frame_height if self.orientation == 'horizontal' else frame_width)
+        crossed_in = []
+        crossed_out = []
         
         for track in tracks:
             if not track.is_confirmed():
@@ -35,14 +38,17 @@ class PeopleCounter:
                 prev_pos = self.tracked_objects[track_id]
                 
                 # Check line crossing
+                # Standard: Top -> Bottom is Entry (In), Bottom -> Top is Exit (Out)
                 if prev_pos < line_coord <= current_pos:
                     self.entry_count += 1
+                    crossed_in.append(track)
                 elif prev_pos > line_coord >= current_pos:
                     self.exit_count += 1
+                    crossed_out.append(track)
             
             self.tracked_objects[track_id] = current_pos
             
-        return self.entry_count, self.exit_count
+        return self.entry_count, self.exit_count, crossed_in, crossed_out
 
     def get_counts(self):
         return self.entry_count, self.exit_count

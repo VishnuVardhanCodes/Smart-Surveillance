@@ -65,11 +65,30 @@ class SurveillanceDetector:
         # 2. Update Tracker
         tracks = self.tracker.update(detections, frame)
         
-        # 3. Update People Count
+        # 3. Update People Count & Get Events
         h, w, _ = frame.shape
-        in_count, out_count = self.counter.count(tracks, w, h)
+        in_count, out_count, crossed_in, crossed_out = self.counter.count(tracks, w, h)
         
-        # 4. Process individual tracks for drawing and saving
+        # 4. Handle Crossing Events
+        # Handle Entries
+        for track in crossed_in:
+            class_id = track.get_det_class()
+            obj_type = self.target_classes.get(class_id, "unknown")
+            # Save Image and Log Entry
+            img_path = self.save_image(frame, obj_type, f"{obj_type}s" if obj_type == 'person' else "vehicles")
+            self.db.insert_detection(obj_type, img_path, event_type='Entry', track_id=track.track_id)
+            self.log_event(f"EVENT: {obj_type} (ID: {track.track_id}) ENTERED across line")
+
+        # Handle Exits
+        for track in crossed_out:
+            class_id = track.get_det_class()
+            obj_type = self.target_classes.get(class_id, "unknown")
+            # Log Exit (optional: save image too)
+            img_path = self.save_image(frame, obj_type, f"{obj_type}s" if obj_type == 'person' else "vehicles")
+            self.db.insert_detection(obj_type, img_path, event_type='Exit', track_id=track.track_id)
+            self.log_event(f"EVENT: {obj_type} (ID: {track.track_id}) EXITED across line")
+
+        # 5. Draw visualization
         for track in tracks:
             if not track.is_confirmed():
                 continue
@@ -80,30 +99,15 @@ class SurveillanceDetector:
             obj_type = self.target_classes.get(class_id, "unknown")
             
             # Draw bounding box
-            cv2.rectangle(frame, (int(ltrb[0]), int(ltrb[1])), (int(ltrb[2]), int(ltrb[3])), (0, 255, 0), 2)
+            color = (0, 255, 0) if obj_type == 'person' else (255, 165, 0)
+            cv2.rectangle(frame, (int(ltrb[0]), int(ltrb[1])), (int(ltrb[2]), int(ltrb[3])), color, 2)
             cv2.putText(frame, f"{obj_type} {track_id}", (int(ltrb[0]), int(ltrb[1]) - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            
-            # Vehicle specific logic (Number Plate)
-            plate_text = None
-            if obj_type in ['car', 'bus', 'truck', 'motorcycle']:
-                # Crop vehicle for potential plate detection (simple heuristic)
-                # In a real scenario, you'd use a dedicated plate detector model
-                # Here we simulate plate detection if confidence is high or on a specific region
-                pass # EasyOCR is slow, ideally run on a timer or specific triggers
-
-            # Save detection to DB periodically (e.g., once per track confirmation)
-            # This is a simplified logic: save when first confirmed
-            if not hasattr(track, 'saved_to_db'):
-                img_path = self.save_image(frame, obj_type, f"{obj_type}s" if obj_type == 'person' else "vehicles")
-                self.db.insert_detection(obj_type, img_path)
-                self.log_event(f"Detected {obj_type} (ID: {track_id}) saved to {img_path}")
-                track.saved_to_db = True
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
         # Draw counting line
         line_y = int(self.counter.line_position * h)
-        cv2.line(frame, (0, line_y), (w, line_y), (255, 0, 0), 2)
-        cv2.putText(frame, f"IN: {in_count} OUT: {out_count}", (10, 30),
+        cv2.line(frame, (0, line_y), (w, line_y), (255, 255, 0), 2)
+        cv2.putText(frame, f"IN: {in_count} OUT: {out_count}", (10, 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
         return frame, (in_count, out_count)

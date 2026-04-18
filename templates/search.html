@@ -83,6 +83,7 @@
                                 <th>ID</th>
                                 <th>Timestamp</th>
                                 <th>Category</th>
+                                <th>Event</th>
                                 <th>Plate</th>
                                 <th>Actions</th>
                             </tr>
@@ -146,6 +147,12 @@
                             <div style="font-size: 0.8rem; color: var(--text-med);">${row.time}</div>
                         </td>
                         <td><span class="type-tag ${row.object_type}">${row.object_type.charAt(0).toUpperCase() + row.object_type.slice(1)}</span></td>
+                        <td>
+                            ${row.event_type === 'Entry' 
+                                ? `<span style="color: var(--success); font-weight: 600;"><i class="fas fa-sign-in-alt"></i> IN</span>`
+                                : `<span style="color: var(--danger); font-weight: 600;"><i class="fas fa-sign-out-alt"></i> OUT</span>`
+                            }
+                        </td>
                         <td>${row.plate_number ? `<code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);">${row.plate_number}</code>` : '<span style="color: var(--text-low);">N/A</span>'}</td>
                         <td>
                             <button class="btn-search" style="padding: 6px 12px; font-size: 0.8rem;" onclick="viewEvidence('${row.image_path}', '#${row.id}')">
