@@ -52,19 +52,28 @@
             <div class="search-box animate-in" style="animation-delay: 0.2s;">
                 <div class="form-row">
                     <div class="field">
-                        <label>Filter by Date</label>
-                        <input type="date" id="search-date">
+                        <label><i class="far fa-calendar-check"></i> Filter by Date</label>
+                        <div class="input-wrapper">
+                            <input type="date" id="search-date">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
                     </div>
                     <div class="field">
-                        <label>Select Time (HH:MM)</label>
-                        <input type="text" id="search-time" placeholder="e.g. 14:30">
+                        <label><i class="far fa-clock"></i> Select Time (HH:MM)</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="search-time" placeholder="e.g. 14:30">
+                            <i class="fas fa-stopwatch"></i>
+                        </div>
                     </div>
                     <div class="field">
-                        <label>License Plate Number</label>
-                        <input type="text" id="search-plate" placeholder="e.g. MH12AB1234">
+                        <label><i class="fas fa-fingerprint"></i> License Plate Number</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="search-plate" placeholder="e.g. MH12AB1234">
+                            <i class="fas fa-id-card"></i>
+                        </div>
                     </div>
                     <button class="btn-primary" onclick="performSearch()">
-                        <i class="fas fa-filter"></i> Apply Filters
+                        <i class="fas fa-search"></i> Start Intelligence Query
                     </button>
                 </div>
             </div>
