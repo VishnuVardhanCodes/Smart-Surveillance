@@ -102,10 +102,13 @@
     </div>
 
     <!-- Image Modal -->
-    <div id="imageModal" class="modal" onclick="this.style.display='none'">
-        <div style="position: relative; text-align: center;">
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-close" onclick="closeModal()">
+                <i class="fas fa-times"></i>
+            </div>
             <img id="modalImg" src="" alt="Detection Snapshot">
-            <p style="margin-top: 10px; color: var(--text-high); font-weight: 500;">Detection Evidence</p>
+            <p style="margin-top: 15px; color: var(--text-high); font-weight: 500; text-align: center;">Detection Evidence</p>
         </div>
     </div>
 
@@ -113,10 +116,19 @@
         function showImage(path) {
             const modal = document.getElementById('imageModal');
             const img = document.getElementById('modalImg');
+            
             // Ensure path is local-absolute and uses forward slashes
             const webPath = '/' + path.replace(/\\/g, '/');
             img.src = webPath; 
+            
             modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 400);
         }
     </script>
 </body>

@@ -102,22 +102,25 @@
     </div>
 
     <!-- Image Modal -->
-    <div id="imageModal" class="modal" onclick="this.style.display='none'">
-        <div style="position: relative; text-align: center;">
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-close" onclick="closeModal()">
+                <i class="fas fa-times"></i>
+            </div>
             <img id="modalImg" src="" alt="Evidence">
-            <p id="modalCaption" style="margin-top: 10px; color: var(--text-high); font-weight: 500;">Evidence Snapshot</p>
+            <p id="modalCaption" style="margin-top: 15px; color: var(--text-high); font-weight: 500; text-align: center;">Evidence Snapshot</p>
         </div>
     </div>
 
     <script>
         async function performSearch() {
+            // ... (rest of the search logic remains same)
             const date = document.getElementById('search-date').value;
             const time = document.getElementById('search-time').value;
             const plate = document.getElementById('search-plate').value;
             const resultsBody = document.getElementById('search-results');
             const countBadge = document.getElementById('results-count');
 
-            // Show loading state
             resultsBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 3rem;">Searching records...</td></tr>`;
 
             try {
@@ -161,11 +164,19 @@
             const modal = document.getElementById('imageModal');
             const img = document.getElementById('modalImg');
             const caption = document.getElementById('modalCaption');
-            // Ensure path is local-absolute and uses forward slashes
+            
             const webPath = '/' + path.replace(/\\/g, '/');
             img.src = webPath; 
             caption.innerText = `Evidence Snapshot for Record ${id}`;
+            
             modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 400);
         }
     </script>
 </body>
