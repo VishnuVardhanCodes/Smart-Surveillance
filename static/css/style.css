@@ -2,10 +2,10 @@
 
 :root {
     /* Color Palette - Premium Surveillance Theme */
-    --bg-main: #050505;
-    --bg-sidebar: #0a0a0a;
-    --primary: #0084ff;
-    --primary-glow: rgba(0, 132, 255, 0.3);
+    --bg-main: #020617;
+    --bg-sidebar: #0f172a;
+    --primary: #38bdf8;
+    --primary-glow: rgba(56, 189, 248, 0.4);
     --secondary: #64748b;
     --accent: #00d2ff;
     --success: #10b981;
@@ -254,9 +254,10 @@ header {
 }
 
 .tile-value {
-    font-size: 2.5rem;
-    font-weight: 700;
+    font-size: 2.8rem;
+    font-weight: 800;
     color: var(--text-high);
+    text-shadow: 0 0 20px var(--primary-glow);
 }
 
 .tile-icon {

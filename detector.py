@@ -46,7 +46,8 @@ class SurveillanceDetector:
         filename = f"{obj_type}_{timestamp}.jpg"
         filepath = os.path.join(dir_path, filename)
         cv2.imwrite(filepath, frame)
-        return filepath
+        # Ensure the path stored in DB uses forward slashes for the web UI
+        return filepath.replace('\\', '/')
 
     def process_frame(self, frame):
         """Process a single frame for detection and tracking."""
