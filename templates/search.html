@@ -41,7 +41,7 @@
 
         <!-- Main Workspace -->
         <main class="main-content">
-            <header>
+            <header class="animate-in" style="animation-delay: 0.1s;">
                 <div class="header-info">
                     <h1>Intelligent Search</h1>
                     <div class="date-time">Query surveillance database with filters</div>
@@ -49,7 +49,7 @@
             </header>
 
             <!-- Search Filters -->
-            <div class="search-box">
+            <div class="search-box animate-in" style="animation-delay: 0.2s;">
                 <div class="form-row">
                     <div class="field">
                         <label>Filter by Date</label>
@@ -63,17 +63,17 @@
                         <label>License Plate Number</label>
                         <input type="text" id="search-plate" placeholder="e.g. MH12AB1234">
                     </div>
-                    <button onclick="performSearch()" class="btn-search">
+                    <button class="btn-primary" onclick="performSearch()">
                         <i class="fas fa-filter"></i> Apply Filters
                     </button>
                 </div>
             </div>
 
             <!-- Results Section -->
-            <div class="card">
+            <div class="card animate-in" style="animation-delay: 0.4s;">
                 <div class="card-header">
                     <h3><i class="fas fa-list-check"></i> Query Results</h3>
-                    <div id="results-count" class="badge">Awaiting query...</div>
+                    <div class="badge" id="results-count" style="background: rgba(56, 189, 248, 0.1); color: var(--primary);">Awaiting query...</div>
                 </div>
                 
                 <div class="table-container">
@@ -90,8 +90,8 @@
                         </thead>
                         <tbody id="search-results">
                             <tr>
-                                <td colspan="5" style="text-align: center; color: var(--text-med); padding: 3rem;">
-                                    <i class="fas fa-search-plus" style="font-size: 2rem; margin-bottom: 1rem; display: block; opacity: 0.5;"></i>
+                                <td colspan="6" style="text-align: center; padding: 5rem; color: var(--text-low);">
+                                    <i class="fas fa-search-plus" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>
                                     Input search parameters above to view results
                                 </td>
                             </tr>
@@ -115,14 +115,13 @@
 
     <script>
         async function performSearch() {
-            // ... (rest of the search logic remains same)
             const date = document.getElementById('search-date').value;
             const time = document.getElementById('search-time').value;
             const plate = document.getElementById('search-plate').value;
             const resultsBody = document.getElementById('search-results');
             const countBadge = document.getElementById('results-count');
 
-            resultsBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 3rem;">Searching records...</td></tr>`;
+            resultsBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 3rem;">Searching records...</td></tr>`;
 
             try {
                 const response = await fetch('/api/search', {
@@ -135,7 +134,7 @@
                 countBadge.innerText = `${results.length} records found`;
 
                 if (results.length === 0) {
-                    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-med);">No records found matching these filters.</td></tr>`;
+                    resultsBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 3rem; color: var(--text-low);">No records found matching these filters.</td></tr>`;
                     return;
                 }
 
@@ -155,7 +154,7 @@
                         </td>
                         <td>${row.plate_number ? `<code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);">${row.plate_number}</code>` : '<span style="color: var(--text-low);">N/A</span>'}</td>
                         <td>
-                            <button class="btn-search" style="padding: 6px 12px; font-size: 0.8rem;" onclick="viewEvidence('${row.image_path}', '#${row.id}')">
+                            <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="viewEvidence('${row.image_path}', '#${row.id}')">
                                 <i class="fas fa-eye"></i> View
                             </button>
                         </td>
@@ -163,7 +162,7 @@
                 `).join('');
             } catch (error) {
                 console.error("Search failed:", error);
-                resultsBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--danger);">An error occurred while searching.</td></tr>`;
+                resultsBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 3rem; color: var(--danger);">An error occurred while searching.</td></tr>`;
             }
         }
 

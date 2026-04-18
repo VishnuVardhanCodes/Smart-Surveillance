@@ -47,64 +47,69 @@
 
         <!-- Main Workspace -->
         <main class="main-content">
-            <header>
+            <header class="animate-in" style="animation-delay: 0.1s;">
                 <div class="header-info">
                     <h1>Surveillance Overview</h1>
-                    <div class="date-time" id="current-datetime">Loading session...</div>
+                    <div class="date-time">
+                        <i class="far fa-calendar-alt"></i>
+                        <span id="current-date">Saturday, April 18, 2026</span>
+                        <span style="opacity: 0.3;">|</span>
+                        <i class="far fa-clock"></i>
+                        <span id="current-time">07:32:35 PM</span>
+                    </div>
                 </div>
-                <div class="badges">
-                    <span class="badge live"><i class="fas fa-circle"></i> Live Feed</span>
+                <div class="status-badge">
+                    <span class="badge live">● LIVE FEED</span>
                 </div>
             </header>
 
-            <!-- Real-time Stats Cards -->
+            <!-- Stats Grid -->
             <div class="stats-tiles">
-                <div class="tile">
-                    <div class="tile-icon"><i class="fas fa-user-plus"></i></div>
+                <div class="tile animate-in" style="animation-delay: 0.2s;">
                     <div class="tile-label">Total Entries</div>
                     <div class="tile-value" id="count-in">0</div>
+                    <div class="tile-icon"><i class="fas fa-user-plus"></i></div>
                 </div>
-                <div class="tile">
-                    <div class="tile-icon"><i class="fas fa-user-minus"></i></div>
+                <div class="tile animate-in" style="animation-delay: 0.3s;">
                     <div class="tile-label">Total Exits</div>
                     <div class="tile-value" id="count-out">0</div>
+                    <div class="tile-icon"><i class="fas fa-user-minus"></i></div>
                 </div>
-                <div class="tile">
-                    <div class="tile-icon"><i class="fas fa-users"></i></div>
+                <div class="tile animate-in" style="animation-delay: 0.4s;">
                     <div class="tile-label">Current Occupancy</div>
                     <div class="tile-value" id="occupancy">0</div>
+                    <div class="tile-icon"><i class="fas fa-users"></i></div>
                 </div>
             </div>
 
-            <!-- Dashboard Grid Layout -->
+            <!-- Dashboard Grid -->
             <div class="dashboard-grid">
-                <!-- Video Monitor Section -->
-                <section class="card video-section">
+                <!-- Video Section -->
+                <div class="card animate-in" style="animation-delay: 0.5s;">
                     <div class="card-header">
                         <h3><i class="fas fa-video"></i> Principal Camera Stream</h3>
-                        <div class="card-actions">
-                            <i class="fas fa-expand"></i>
+                        <div class="video-actions">
+                            <i class="fas fa-expand-alt" style="cursor: pointer; opacity: 0.6;"></i>
                         </div>
                     </div>
                     <div class="video-frame">
-                        <img src="{{ url_for('video_feed') }}" alt="Surveillance Stream" onerror="this.src='https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop'">
-                        <div class="video-overlay">
-                            <div class="scanner-line"></div>
-                        </div>
+                        <div class="scanner-line"></div>
+                        <img src="{{ url_for('video_feed') }}" alt="Surveillance Feed">
                     </div>
-                </section>
+                </div>
 
-                <!-- Activity Logging Section -->
-                <section class="card logs-section">
+                <!-- Recent Events Sidebar -->
+                <div class="card animate-in" style="animation-delay: 0.6s;">
                     <div class="card-header">
                         <h3><i class="fas fa-list-ul"></i> System Activity</h3>
-                        <span class="text-med" style="font-size: 0.8rem;">Real-time</span>
+                        <span class="date-time" style="font-size: 0.75rem;">Real-time</span>
                     </div>
-                    <div class="logs-list" id="logs-content">
-                        <!-- Dynamic Logs -->
-                        <div class="log-entry">Initializing smart detection modules...</div>
+                    <div class="logs-list" id="activity-logs">
+                        <div class="log-entry" style="text-align: center; opacity: 0.5; padding: 2rem;">
+                            Initializing smart detection modules...
+                        </div>
                     </div>
-                </section>
+                </div>
             </div>
         </main>
     </div>
