@@ -3,152 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detection Archive | SmartEye AI</title>
+    <title>SmartEye AI | Detection History</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        th { background: #f8fafc; font-weight: 600; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:hover { background: rgba(37, 99, 235, 0.02); }
+        .type-tag { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .type-tag.person { background: #e0f2fe; color: #0369a1; }
+        .type-tag.car, .type-tag.truck, .type-tag.bus { background: #fef3c7; color: #92400e; }
+        .badge { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal.active { opacity: 1; }
+        .modal-content { background: white; padding: 20px; border-radius: 20px; max-width: 80%; box-shadow: var(--shadow-lg); position: relative; }
+        .modal-content img { width: 100%; border-radius: 12px; }
+    </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar Navigation -->
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
                 <i class="fas fa-eye-slash"></i>
                 <span>SmartEye AI</span>
             </div>
-            
             <nav>
-                <a href="/" class="nav-link {{ 'active' if request.path == '/' }}">
+                <a href="/" class="nav-link">
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="/history" class="nav-link {{ 'active' if request.path == '/history' }}">
+                <a href="/history" class="nav-link active">
                     <i class="fas fa-history"></i>
                     <span>History</span>
                 </a>
-                <a href="/humans" class="nav-link {{ 'active' if request.path == '/humans' }}">
+                <a href="/humans" class="nav-link">
                     <i class="fas fa-user-friends"></i>
                     <span>Humans</span>
                 </a>
-                <a href="/bikes" class="nav-link {{ 'active' if request.path == '/bikes' }}">
+                <a href="/bikes" class="nav-link">
                     <i class="fas fa-motorcycle"></i>
                     <span>Two-Wheelers</span>
                 </a>
-                <a href="/vehicles" class="nav-link {{ 'active' if request.path == '/vehicles' }}">
+                <a href="/vehicles" class="nav-link">
                     <i class="fas fa-car-side"></i>
                     <span>Vehicles</span>
                 </a>
-                <a href="/search" class="nav-link {{ 'active' if request.path == '/search' }}">
-                    <i class="fas fa-magnifying-glass"></i>
-                    <span>Search</span>
+                <a href="/reports" class="nav-link">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Reports</span>
                 </a>
             </nav>
-            
             <div class="sidebar-footer">
-                <div class="status-card">
-                    <div class="status-dot online"></div>
+                <div style="display: flex; align-items: center; gap: 10px; color: #94a3b8; font-size: 0.85rem;">
+                    <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);"></div>
                     <span>System Active</span>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Workspace -->
         <main class="main-content">
-            <header class="animate-in" style="animation-delay: 0.1s;">
-                <div class="header-info">
-                    <h1>{{ title }}</h1>
-                    <div class="date-time">View detected entries for this category</div>
-                </div>
+            <header>
+                <h1>Archive Records</h1>
+                <p>Detailed historical logs of all detected activity.</p>
             </header>
 
-            <div class="card animate-in" style="animation-delay: 0.3s;">
+            <div class="card">
                 <div class="card-header">
-                    <h3><i class="fas fa-database"></i> Database Records</h3>
-                    <div class="badge">{{ detections|length }} entries found</div>
+                    <h3><i class="fas fa-database"></i> Database Entries</h3>
+                    <span class="badge">{{ detections|length }} Records</span>
                 </div>
-                
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Timestamp</th>
-                                <th>Category</th>
-                                <th>Event</th>
-                                <th>License Plate</th>
-                                <th>Evidence</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in detections %}
-                            <tr>
-                                <td>#{{ record.id }}</td>
-                                <td>
-                                    <div style="font-weight: 500;">{{ record.date }}</div>
-                                    <div style="font-size: 0.8rem; color: var(--text-med);">{{ record.time }}</div>
-                                </td>
-                                <td>
-                                    <span class="type-tag {{ record.object_type }}">
-                                        {{ record.object_type|capitalize }}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% if record.event_type == 'Entry' %}
-                                        <span style="color: var(--success); font-weight: 600;"><i class="fas fa-sign-in-alt"></i> IN</span>
-                                    {% else %}
-                                        <span style="color: var(--danger); font-weight: 600;"><i class="fas fa-sign-out-alt"></i> OUT</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if record.plate_number %}
-                                        <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);">
-                                            {{ record.plate_number }}
-                                        </code>
-                                    {% else %}
-                                        <span style="color: var(--text-low);">N/A</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <button class="btn-primary" style="padding: 6px 16px; font-size: 0.8rem;" onclick="showImage('{{ record.image_path }}')">
-                                        <i class="fas fa-image"></i> View
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>DateTime</th>
+                            <th>Camera</th>
+                            <th>Category</th>
+                            <th>Event</th>
+                            <th>License Plate</th>
+                            <th>Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in detections %}
+                        <tr>
+                            <td>
+                                <strong>{{ record.date }}</strong><br>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ record.time }}</span>
+                            </td>
+                            <td><i class="fas fa-camera"></i> {{ record.camera_name }}</td>
+                            <td><span class="type-tag {{ record.object_type }}">{{ record.object_type|upper }}</span></td>
+                            <td>
+                                {% if record.event_type == 'Entry' %}
+                                    <span style="color: var(--accent); font-weight: 600;"><i class="fas fa-sign-in-alt"></i> IN</span>
+                                {% else %}
+                                    <span style="color: var(--danger); font-weight: 600;"><i class="fas fa-sign-out-alt"></i> OUT</span>
+                                {% endif %}
+                            </td>
+                            <td><code>{{ record.plate_number if record.plate_number else 'N/A' }}</code></td>
+                            <td>
+                                <button class="btn btn-primary" onclick="showImage('{{ record.image_path }}')">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </main>
     </div>
 
     <!-- Image Modal -->
-    <div id="imageModal" class="modal" onclick="closeModal()">
+    <div id="imageModal" class="modal" onclick="this.classList.remove('active'); setTimeout(() => this.style.display='none', 300)">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-close" onclick="closeModal()">
-                <i class="fas fa-times"></i>
-            </div>
-            <img id="modalImg" src="" alt="Detection Snapshot">
-            <p style="margin-top: 15px; color: var(--text-high); font-weight: 500; text-align: center;">Detection Evidence</p>
+            <img id="modalImg" src="">
         </div>
     </div>
 
     <script>
         function showImage(path) {
             const modal = document.getElementById('imageModal');
-            const img = document.getElementById('modalImg');
-            
-            // Ensure path is local-absolute and uses forward slashes
-            const webPath = '/' + path.replace(/\\/g, '/');
-            img.src = webPath; 
-            
+            document.getElementById('modalImg').src = '/' + path;
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('active'), 10);
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('imageModal');
-            modal.classList.remove('active');
-            setTimeout(() => modal.style.display = 'none', 400);
         }
     </script>
 </body>
