@@ -16,31 +16,31 @@
                 <span>SmartEye AI</span>
             </div>
             <nav>
-                <a href="/" class="nav-link active">
+                <a href="/" class="nav-link {{ 'active' if request.path == '/' else '' }}">
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="/history" class="nav-link">
+                <a href="/history" class="nav-link {{ 'active' if request.path == '/history' else '' }}">
                     <i class="fas fa-history"></i>
                     <span>History</span>
                 </a>
-                <a href="/humans" class="nav-link">
+                <a href="/humans" class="nav-link {{ 'active' if request.path == '/humans' else '' }}">
                     <i class="fas fa-user-friends"></i>
                     <span>Humans</span>
                 </a>
-                <a href="/bikes" class="nav-link">
+                <a href="/bikes" class="nav-link {{ 'active' if request.path == '/bikes' else '' }}">
                     <i class="fas fa-motorcycle"></i>
                     <span>Two-Wheelers</span>
                 </a>
-                <a href="/vehicles" class="nav-link">
+                <a href="/vehicles" class="nav-link {{ 'active' if request.path == '/vehicles' else '' }}">
                     <i class="fas fa-car-side"></i>
                     <span>Vehicles</span>
                 </a>
-                <a href="/reports" class="nav-link">
+                <a href="/reports" class="nav-link {{ 'active' if request.path == '/reports' else '' }}">
                     <i class="fas fa-file-pdf"></i>
                     <span>Reports</span>
                 </a>
-                <a href="/search" class="nav-link">
+                <a href="/search" class="nav-link {{ 'active' if request.path == '/search' else '' }}">
                     <i class="fas fa-search"></i>
                     <span>Search</span>
                 </a>
