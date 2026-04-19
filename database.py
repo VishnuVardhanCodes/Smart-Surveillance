@@ -55,6 +55,20 @@ class DatabaseManager:
         conn.close()
         return rows
 
+    def get_detections_by_category(self, categories):
+        """Fetch detection records filtered by a list of categories."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        placeholders = ', '.join(['?'] * len(categories))
+        query = f'SELECT * FROM detections WHERE object_type IN ({placeholders}) ORDER BY id DESC'
+        
+        cursor.execute(query, categories)
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
     def search_detections(self, date=None, time=None, plate_number=None):
         """Search detections with filters."""
         conn = sqlite3.connect(self.db_path)

@@ -17,9 +17,9 @@ class SurveillanceDetector:
         self.plate_reader = PlateReader()
         self.db = DatabaseManager()
         
-        # Classes of interest from COCO dataset
         self.target_classes = {
             0: 'person',
+            1: 'bicycle',
             2: 'car',
             3: 'motorcycle',
             5: 'bus',

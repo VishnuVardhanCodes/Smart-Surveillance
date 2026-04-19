@@ -456,7 +456,8 @@ tr:hover td {
 }
 
 .type-tag.person { background: #dcfce7; color: #166534; }
-.type-tag.vehicle { background: #dbeafe; color: #1e40af; }
+.type-tag.car, .type-tag.truck, .type-tag.bus { background: #dbeafe; color: #1e40af; }
+.type-tag.motorcycle, .type-tag.bicycle { background: #fef3c7; color: #92400e; }
 
 /* Modal */
 .modal {

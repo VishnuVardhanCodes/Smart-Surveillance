@@ -59,7 +59,22 @@ def get_counts():
 @app.route('/history')
 def history():
     detections = db.get_all_detections()
-    return render_template('history.html', detections=detections)
+    return render_template('history.html', title="ALL RECORDS", detections=detections)
+
+@app.route('/humans')
+def humans():
+    detections = db.get_detections_by_category(['person'])
+    return render_template('history.html', title="HUMAN DETECTIONS", detections=detections)
+
+@app.route('/bikes')
+def bikes():
+    detections = db.get_detections_by_category(['motorcycle', 'bicycle'])
+    return render_template('history.html', title="TWO-WHEELER DETECTIONS", detections=detections)
+
+@app.route('/vehicles')
+def vehicles():
+    detections = db.get_detections_by_category(['car', 'bus', 'truck'])
+    return render_template('history.html', title="VEHICLE DETECTIONS", detections=detections)
 
 @app.route('/search')
 def search():
