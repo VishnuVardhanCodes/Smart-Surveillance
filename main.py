@@ -62,6 +62,11 @@ def night_alerts():
     alerts = db.get_recent_night_alerts(5)
     return jsonify([dict(row) for row in alerts])
 
+@app.route('/api/stats')
+def get_global_stats():
+    stats = db.get_global_stats()
+    return jsonify(stats)
+
 @app.route('/api/generate_report')
 def generate_report():
     date_str = datetime.now().strftime("%Y-%m-%d")

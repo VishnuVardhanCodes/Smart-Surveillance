@@ -145,11 +145,10 @@
         
         async function updateData() {
             try {
-                // 1. Update Camera States & Global Counts
+                // 1. Update Camera States
                 const stateResponse = await fetch('/api/camera_states');
                 const states = await stateResponse.json();
                 
-                let totalIn = 0, totalOut = 0;
                 for (const cam in states) {
                     const statusEl = document.getElementById(`status-${cam}`);
                     const countsEl = document.getElementById(`counts-${cam}`);
@@ -161,28 +160,29 @@
                     if (countsEl) {
                         countsEl.innerText = `IN: ${states[cam].in} | OUT: ${states[cam].out}`;
                     }
-                    totalIn += states[cam].in;
-                    totalOut += states[cam].out;
                 }
-                document.getElementById('global-in').innerText = totalIn;
-                document.getElementById('global-out').innerText = totalOut;
 
-                // 2. Update Night Alerts
+                // 2. Update Global Stats
+                const statsResponse = await fetch('/api/stats');
+                const stats = await statsResponse.json();
+                document.getElementById('global-in').innerText = stats.entries;
+                document.getElementById('global-out').innerText = stats.exits;
+                document.getElementById('global-vehicles').innerText = stats.vehicles;
+                document.getElementById('global-night').innerText = stats.night_alerts;
+
+                // 3. Update Recent Night Alerts
                 const alertResponse = await fetch('/api/night_alerts');
                 const alerts = await alertResponse.json();
                 const alertContainer = document.getElementById('night-alerts-list');
                 const banner = document.getElementById('night-alert-banner');
                 
-                document.getElementById('global-night').innerText = alerts.length;
-
                 if (alerts.length > 0) {
-                    // Show banner for most recent alert if it's new (within last 30s)
                     banner.style.display = 'flex';
                     document.getElementById('night-alert-desc').innerText = `Suspicious activity detected on Camera: ${alerts[0].camera_name}`;
                     
                     alertContainer.innerHTML = alerts.map(alert => `
                         <div class="alert-item">
-                            <img src="${alert.image_path}" alt="Alert">
+                            <img src="/${alert.image_path}" alt="Alert">
                             <div class="alert-info">
                                 <h4>${alert.object_type.toUpperCase()} - ${alert.camera_name}</h4>
                                 <span>${alert.time} | ${alert.date}</span>
@@ -191,23 +191,28 @@
                     `).join('');
                 } else {
                     banner.style.display = 'none';
+                    alertContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 1rem;">No recent night alerts</p>';
                 }
 
-                // 3. Update System Logs
+                // 4. Update System Logs
                 const logResponse = await fetch('/api/logs');
                 const logs = await logResponse.json();
                 const logContainer = document.getElementById('system-logs');
-                logContainer.innerHTML = logs.map(log => {
-                    const parts = log.split('] ');
-                    const time = parts[0].replace('[', '');
-                    const msg = parts[1];
-                    return `
-                        <div class="log-item">
-                            <span class="log-time">${time.split(' ')[1]}</span>
-                            <span class="log-msg">${msg}</span>
-                        </div>
-                    `;
-                }).join('');
+                if (logs.length > 0) {
+                    logContainer.innerHTML = logs.map(log => {
+                        const parts = log.split('] ');
+                        const time = parts[0]?.replace('[', '') || '--:--:--';
+                        const msg = parts[1] || log;
+                        return `
+                            <div class="log-item">
+                                <span class="log-time">${time.includes(' ') ? time.split(' ')[1] : time}</span>
+                                <span class="log-msg">${msg}</span>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    logContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 1rem;">No logs available</p>';
+                }
 
             } catch (err) {
                 console.error("Dashboard update failed:", err);

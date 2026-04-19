@@ -48,13 +48,24 @@ class DatabaseManager:
         conn.close()
 
     def _migrate_db(self):
-        """Handle schema migrations."""
+        """Handle schema migrations to ensure existing databases are up to date."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # Check if camera_name exists in detections
+        # Fetch current column names
         cursor.execute("PRAGMA table_info(detections)")
         columns = [column[1] for column in cursor.fetchall()]
+        
+        # Add missing columns if they don't exist
+        if 'event_type' not in columns:
+            cursor.execute("ALTER TABLE detections ADD COLUMN event_type TEXT DEFAULT 'Entry'")
+            
+        if 'track_id' not in columns:
+            cursor.execute("ALTER TABLE detections ADD COLUMN track_id INTEGER")
+            
+        if 'plate_number' not in columns:
+            cursor.execute("ALTER TABLE detections ADD COLUMN plate_number TEXT")
+
         if 'camera_name' not in columns:
             cursor.execute("ALTER TABLE detections ADD COLUMN camera_name TEXT DEFAULT 'Main'")
             
@@ -161,6 +172,31 @@ class DatabaseManager:
             'unique_plates': unique_plates,
             'night_alerts': night_alerts,
             'hourly_data': hourly_data
+        }
+
+    def get_global_stats(self):
+        """Fetch total statistics for the global dashboard."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT COUNT(*) FROM detections WHERE event_type = 'Entry'")
+        entries = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM detections WHERE event_type = 'Exit'")
+        exits = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM detections WHERE object_type IN ('car', 'bus', 'truck', 'motorcycle')")
+        vehicles = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM night_alerts")
+        night_alerts = cursor.fetchone()[0]
+        
+        conn.close()
+        return {
+            'entries': entries,
+            'exits': exits,
+            'vehicles': vehicles,
+            'night_alerts': night_alerts
         }
 
     def search_detections(self, date=None, time=None, plate_number=None, camera_name=None):
