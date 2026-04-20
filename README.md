@@ -1,4 +1,4 @@
-# 🛡️ SmartEye AI: Advanced Multi-Camera Surveillance System
+# 🛡️ ITC PSPD BCM | SmartEye AI Sentinel - Advanced Surveillance Suite
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
@@ -11,9 +11,9 @@
 </p>
 
 ## 📌 Project Overview
-**SmartEye AI** is a professional-grade, intelligent surveillance solution designed to transform standard security feeds into actionable data streams. By combining **SOTA Computer Vision (YOLOv8)** with robust multi-camera management, the system provides real-time monitoring, automated threat detection, and comprehensive analytics.
+**ITC PSPD BCM: SmartEye AI** is a professional-grade, intelligent surveillance solution designed to transform standard security feeds into actionable data streams. By combining **SOTA Computer Vision (YOLOv8)** with robust multi-camera management, the system provides real-time monitoring, automated threat detection, and comprehensive analytics.
 
-Whether for home security, office monitoring, or industrial surveillance, SmartEye AI offers a premium experience with a high-performance backend and a modern, glassmorphic web dashboard.
+Whether for industrial security, logistics monitoring, or administrative surveillance, the SmartEye AI platform offers a premium experience with a high-performance backend and a modern, glassmorphic web dashboard.
 
 ---
 

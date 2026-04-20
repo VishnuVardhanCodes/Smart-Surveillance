@@ -1,33 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartEye AI | Detection History</title>
+    <title>ITC PSPD BCM | SmartEye AI Sentinel</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 16px; text-align: left; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        th { background: #f8fafc; font-weight: 600; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        tr:hover { background: rgba(37, 99, 235, 0.02); }
-        .type-tag { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-        .type-tag.person { background: #e0f2fe; color: #0369a1; }
-        .type-tag.car, .type-tag.truck, .type-tag.bus { background: #fef3c7; color: #92400e; }
-        .badge { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
-        .modal.active { opacity: 1; }
-        .modal-content { background: white; padding: 20px; border-radius: 20px; max-width: 80%; box-shadow: var(--shadow-lg); position: relative; }
-        .modal-content img { width: 100%; border-radius: 12px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th,
+        td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background: rgba(37, 99, 235, 0.02);
+        }
+
+        .type-tag {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .type-tag.person {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .type-tag.car,
+        .type-tag.truck,
+        .type-tag.bus {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            max-width: 80%;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+
+        .modal-content img {
+            width: 100%;
+            border-radius: 12px;
+        }
     </style>
 </head>
+
 <body>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
-                <i class="fas fa-eye-slash"></i>
-                <span>SmartEye AI</span>
+                <i class="fas fa-shield-alt"></i>
+                <div style="display: flex !important; flex-direction: column !important; line-height: 1.2;">
+                    <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;">ITC PSPD BCM</span>
+                    <span style="font-size: 1rem; color: white; font-weight: 700; letter-spacing: 0.2px;">SmartEye AI Sentinel</span>
+                </div>
             </div>
             <nav>
                 <a href="/" class="nav-link">
@@ -57,7 +133,9 @@
             </nav>
             <div class="sidebar-footer">
                 <div style="display: flex; align-items: center; gap: 10px; color: #94a3b8; font-size: 0.85rem;">
-                    <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);"></div>
+                    <div
+                        style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);">
+                    </div>
                     <span>System Active</span>
                 </div>
             </div>
@@ -69,54 +147,87 @@
                 <p>Detailed historical logs of all detected activity.</p>
             </header>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-database"></i> Database Entries</h3>
-                    <span class="badge">{{ detections|length }} Records</span>
+            <div class="history-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <!-- Entry Records (IN) -->
+                <div class="card">
+                    <div class="card-header" style="border-bottom: 3px solid var(--accent);">
+                        <h3><i class="fas fa-sign-in-alt" style="color: var(--accent);"></i> Entry Logs (IN)</h3>
+                        <span class="badge" style="background: var(--accent);">{{ detections|selectattr('event_type', 'equalto', 'Entry')|list|length }} Records</span>
+                    </div>
+                    <div style="max-height: 600px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>DateTime</th>
+                                    <th>Camera</th>
+                                    <th>Category</th>
+                                    <th>Evidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in detections if record.event_type == 'Entry' %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ record.date }}</strong><br>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ record.time }}</span>
+                                    </td>
+                                    <td>{{ record.camera_name }}</td>
+                                    <td><span class="type-tag {{ record.object_type }}">{{ record.object_type|upper }}</span></td>
+                                    <td>
+                                        <button class="btn btn-primary" onclick="showImage('{{ record.image_path }}')" style="padding: 6px 12px; font-size: 0.8rem;">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>DateTime</th>
-                            <th>Camera</th>
-                            <th>Category</th>
-                            <th>Event</th>
-                            <th>License Plate</th>
-                            <th>Evidence</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for record in detections %}
-                        <tr>
-                            <td>
-                                <strong>{{ record.date }}</strong><br>
-                                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ record.time }}</span>
-                            </td>
-                            <td><i class="fas fa-camera"></i> {{ record.camera_name }}</td>
-                            <td><span class="type-tag {{ record.object_type }}">{{ record.object_type|upper }}</span></td>
-                            <td>
-                                {% if record.event_type == 'Entry' %}
-                                    <span style="color: var(--accent); font-weight: 600;"><i class="fas fa-sign-in-alt"></i> IN</span>
-                                {% else %}
-                                    <span style="color: var(--danger); font-weight: 600;"><i class="fas fa-sign-out-alt"></i> OUT</span>
-                                {% endif %}
-                            </td>
-                            <td><code>{{ record.plate_number if record.plate_number else 'N/A' }}</code></td>
-                            <td>
-                                <button class="btn btn-primary" onclick="showImage('{{ record.image_path }}')">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+                <!-- Exit Records (OUT) -->
+                <div class="card">
+                    <div class="card-header" style="border-bottom: 3px solid var(--danger);">
+                        <h3><i class="fas fa-sign-out-alt" style="color: var(--danger);"></i> Exit Logs (OUT)</h3>
+                        <span class="badge" style="background: var(--danger);">{{ detections|selectattr('event_type', 'equalto', 'Exit')|list|length }} Records</span>
+                    </div>
+                    <div style="max-height: 600px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>DateTime</th>
+                                    <th>Camera</th>
+                                    <th>Category</th>
+                                    <th>Evidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in detections if record.event_type == 'Exit' %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ record.date }}</strong><br>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ record.time }}</span>
+                                    </td>
+                                    <td>{{ record.camera_name }}</td>
+                                    <td><span class="type-tag {{ record.object_type }}">{{ record.object_type|upper }}</span></td>
+                                    <td>
+                                        <button class="btn btn-primary" onclick="showImage('{{ record.image_path }}')" style="padding: 6px 12px; font-size: 0.8rem;">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
     <!-- Image Modal -->
-    <div id="imageModal" class="modal" onclick="this.classList.remove('active'); setTimeout(() => this.style.display='none', 300)">
+    <div id="imageModal" class="modal"
+        onclick="this.classList.remove('active'); setTimeout(() => this.style.display='none', 300)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <img id="modalImg" src="">
         </div>
@@ -131,4 +242,5 @@
         }
     </script>
 </body>
+
 </html>

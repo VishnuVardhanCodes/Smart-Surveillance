@@ -129,6 +129,17 @@ class SurveillanceDetector:
             cv2.putText(frame, f"{obj_type} {track.track_id}", (int(ltrb[0]), int(ltrb[1]) - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
+        # Draw Clear Boundary Line and Buffer Zone
         line_y = int(self.counter.line_position * h)
-        cv2.line(frame, (0, line_y), (w, line_y), (255, 255, 0), 2)
+        buffer_px = int(self.counter.buffer_size * h / 2)
+        
+        # Buffer area (translucent-like overlay or dashed lines)
+        cv2.line(frame, (0, line_y - buffer_px), (w, line_y - buffer_px), (100, 100, 100), 1)
+        cv2.line(frame, (0, line_y + buffer_px), (w, line_y + buffer_px), (100, 100, 100), 1)
+        
+        # Main Line
+        cv2.line(frame, (0, line_y), (w, line_y), (0, 255, 255), 3) # Thicker Cyan/Yellow line
+        cv2.putText(frame, "ENTRY / EXIT BOUNDARY", (10, line_y - 10), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+
         return frame, (in_count, out_count)

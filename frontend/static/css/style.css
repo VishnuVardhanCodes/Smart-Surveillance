@@ -50,17 +50,15 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: #ffffff;
-    margin-bottom: 3rem;
+    margin-bottom: 3.5rem;
     padding-left: 0.5rem;
+    text-decoration: none;
 }
 
 .logo i {
-    font-size: 1.6rem;
+    font-size: 2rem;
     color: #2563eb;
-    transform: rotate(-15deg);
+    text-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
 }
 
 .nav-link {
@@ -209,7 +207,12 @@ header p {
     border-radius: 20px;
     overflow: hidden;
     box-shadow: var(--shadow);
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: box-shadow 0.3s ease;
+}
+
+.camera-card:hover {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
 }
 
 .camera-header {

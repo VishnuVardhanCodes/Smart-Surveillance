@@ -49,7 +49,7 @@ class ReportGenerator:
             alignment=1,
             spaceAfter=20
         )
-        elements.append(Paragraph(f"SmartEye AI - Daily Surveillance Report", title_style))
+        elements.append(Paragraph(f"ITC PSPD BCM: SmartEye AI Sentinel - Daily Report", title_style))
         elements.append(Paragraph(f"Date: {date_str}", styles['Normal']))
         elements.append(Spacer(1, 12))
         
