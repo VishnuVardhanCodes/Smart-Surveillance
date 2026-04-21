@@ -6,232 +6,573 @@
     <title>ITC PSPD BCM | SmartEye AI Sentinel</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ── Camera-card extras ─────────────────────────────── */
+        .camera-info-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 8px 14px;
+            background: #f8fafc;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .info-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .chip-blue   { background: #dbeafe; color: #1e40af; }
+        .chip-green  { background: #dcfce7; color: #166534; }
+        .chip-red    { background: #fee2e2; color: #991b1b; }
+        .chip-orange { background: #fff7ed; color: #c2410c; }
+        .chip-purple { background: #f3e8ff; color: #7c3aed; }
+        .chip-pink   { background: #fdf2f8; color: #9d174d; }
+        .chip-teal   { background: #f0fdfa; color: #0f766e; }
+
+        /* ── Gate camera history strip ──────────────────────── */
+        .gate-history {
+            padding: 8px 14px 12px;
+            background: #f8fafc;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        .gate-history-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .gate-entry-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            font-size: 0.75rem;
+        }
+        .gate-entry-row:last-child { border-bottom: none; }
+        .gate-entry-icon {
+            width: 28px; height: 28px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; color: white; flex-shrink: 0;
+        }
+        .gate-entry-icon.car   { background: #f59e0b; }
+        .gate-entry-icon.motorcycle { background: #8b5cf6; }
+        .gate-entry-icon.truck { background: #ef4444; }
+        .gate-entry-icon.bus   { background: #3b82f6; }
+        .gate-entry-icon.person { background: #10b981; }
+        .gate-vehicle-type { font-weight: 600; color: #1e293b; min-width: 70px; }
+        .gate-speed-badge {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.68rem;
+            font-weight: 700;
+        }
+        .gate-event-badge {
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        .badge-entry { background: #dcfce7; color: #166534; }
+        .badge-exit  { background: #fee2e2; color: #991b1b; }
+
+        /* ── Room camera gender panel ───────────────────────── */
+        .gender-panel {
+            display: flex;
+            gap: 8px;
+            padding: 10px 14px 12px;
+            background: #f8fafc;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        .gender-card {
+            flex: 1;
+            border-radius: 12px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .gender-card.male   { background: #dbeafe; }
+        .gender-card.female { background: #fdf2f8; }
+        .gender-icon {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; color: white; flex-shrink: 0;
+        }
+        .gender-card.male   .gender-icon { background: #2563eb; }
+        .gender-card.female .gender-icon { background: #db2777; }
+        .gender-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .gender-count {
+            font-size: 1.4rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .gender-card.male   .gender-count { color: #1d4ed8; }
+        .gender-card.female .gender-count { color: #be185d; }
+
+        /* ── Parking plate panel ────────────────────────────── */
+        .plate-strip {
+            padding: 8px 14px 12px;
+            background: #f8fafc;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .plate-strip-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .plate-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            font-size: 0.75rem;
+        }
+        .plate-row:last-child { border-bottom: none; }
+        .plate-badge {
+            background: #1e293b;
+            color: #facc15;
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #64748b;
+        }
+        .plate-time { color: #94a3b8; font-size: 0.65rem; }
+        .plate-cam  { color: #3b82f6; font-size: 0.65rem; font-weight: 600; }
+
+        /* scrollbar thin */
+        .gate-history::-webkit-scrollbar,
+        .plate-strip::-webkit-scrollbar { width: 4px; }
+        .gate-history::-webkit-scrollbar-thumb,
+        .plate-strip::-webkit-scrollbar-thumb {
+            background: #cbd5e1; border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="fas fa-shield-alt"></i>
-                <div style="display: flex !important; flex-direction: column !important; line-height: 1.2;">
-                    <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;">ITC PSPD BCM</span>
-                    <span style="font-size: 1rem; color: white; font-weight: 700; letter-spacing: 0.2px;">SmartEye AI Sentinel</span>
-                </div>
-            </div>
-            <nav>
-                <a href="/" class="nav-link {{ 'active' if request.path == '/' else '' }}">
-                    <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/history" class="nav-link {{ 'active' if request.path == '/history' else '' }}">
-                    <i class="fas fa-history"></i>
-                    <span>History</span>
-                </a>
-                <a href="/humans" class="nav-link {{ 'active' if request.path == '/humans' else '' }}">
-                    <i class="fas fa-user-friends"></i>
-                    <span>Humans</span>
-                </a>
-                <a href="/bikes" class="nav-link {{ 'active' if request.path == '/bikes' else '' }}">
-                    <i class="fas fa-motorcycle"></i>
-                    <span>Two-Wheelers</span>
-                </a>
-                <a href="/vehicles" class="nav-link {{ 'active' if request.path == '/vehicles' else '' }}">
-                    <i class="fas fa-car-side"></i>
-                    <span>Vehicles</span>
-                </a>
-                <a href="/reports" class="nav-link {{ 'active' if request.path == '/reports' else '' }}">
-                    <i class="fas fa-file-pdf"></i>
-                    <span>Reports</span>
-                </a>
-                <a href="/search" class="nav-link {{ 'active' if request.path == '/search' else '' }}">
-                    <i class="fas fa-search"></i>
-                    <span>Search</span>
-                </a>
-            </nav>
-            <div class="sidebar-footer">
-                <div style="display: flex; align-items: center; gap: 10px; color: #94a3b8; font-size: 0.85rem;">
-                    <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);"></div>
-                    <span>System Active</span>
-                </div>
-                <div id="system-clock" style="margin-top: 10px; font-weight: 600; color: #2563eb; font-size: 0.9rem;"></div>
-            </div>
-        </aside>
+<div class="app-container">
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Night Alert Banner -->
-            <div id="night-alert-banner" class="night-alert-banner">
-                <i class="fas fa-exclamation-triangle fa-2x"></i>
-                <div>
-                    <strong>🚨 Night Movement Detected</strong>
-                    <p id="night-alert-desc">Suspicious activity detected on Camera: Gate</p>
-                </div>
-                <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+    <!-- ════════════════  SIDEBAR  ════════════════ -->
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fas fa-shield-alt"></i>
+            <div style="display:flex !important;flex-direction:column !important;line-height:1.2;">
+                <span style="font-size:0.65rem;color:#94a3b8;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;">ITC PSPD BCM</span>
+                <span style="font-size:1rem;color:white;font-weight:700;letter-spacing:0.2px;">SmartEye AI Sentinel</span>
             </div>
-
-            <header>
-                <h1>Command Center</h1>
-                <p>Real-time AI monitoring & Multi-camera stream</p>
-            </header>
-
-            <!-- Stats Grid -->
-            <div class="stats-grid">
-                <div class="stat-card blue">
-                    <div class="stat-icon"><i class="fas fa-sign-in-alt"></i></div>
-                    <div class="stat-value" id="global-in">0</div>
-                    <div class="stat-label">Total Entries</div>
-                </div>
-                <div class="stat-card green">
-                    <div class="stat-icon"><i class="fas fa-sign-out-alt"></i></div>
-                    <div class="stat-value" id="global-out">0</div>
-                    <div class="stat-label">Total Exits</div>
-                </div>
-                <div class="stat-card red">
-                    <div class="stat-icon"><i class="fas fa-moon"></i></div>
-                    <div class="stat-value" id="global-night">0</div>
-                    <div class="stat-label">Night Alerts</div>
-                </div>
-                <div class="stat-card orange">
-                    <div class="stat-icon"><i class="fas fa-car"></i></div>
-                    <div class="stat-value" id="global-vehicles">0</div>
-                    <div class="stat-label">Vehicles Detected</div>
-                </div>
+        </div>
+        <nav>
+            <a href="/"        class="nav-link {{ 'active' if request.path == '/' else '' }}">
+                <i class="fas fa-th-large"></i><span>Dashboard</span>
+            </a>
+            <a href="/history" class="nav-link {{ 'active' if request.path == '/history' else '' }}">
+                <i class="fas fa-history"></i><span>History</span>
+            </a>
+            <a href="/humans"  class="nav-link {{ 'active' if request.path == '/humans' else '' }}">
+                <i class="fas fa-user-friends"></i><span>Humans</span>
+            </a>
+            <a href="/bikes"   class="nav-link {{ 'active' if request.path == '/bikes' else '' }}">
+                <i class="fas fa-motorcycle"></i><span>Two-Wheelers</span>
+            </a>
+            <a href="/vehicles" class="nav-link {{ 'active' if request.path == '/vehicles' else '' }}">
+                <i class="fas fa-car-side"></i><span>Vehicles</span>
+            </a>
+            <a href="/plates"  class="nav-link {{ 'active' if request.path == '/plates' else '' }}">
+                <i class="fas fa-id-card"></i><span>Number Plates</span>
+            </a>
+            <a href="/reports" class="nav-link {{ 'active' if request.path == '/reports' else '' }}">
+                <i class="fas fa-file-pdf"></i><span>Reports</span>
+            </a>
+            <a href="/search"  class="nav-link {{ 'active' if request.path == '/search' else '' }}">
+                <i class="fas fa-search"></i><span>Search</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div style="display:flex;align-items:center;gap:10px;color:#94a3b8;font-size:0.85rem;">
+                <div style="width:10px;height:10px;background:#10b981;border-radius:50%;box-shadow:0 0 10px rgba(16,185,129,0.5);"></div>
+                <span>System Active</span>
             </div>
+            <div id="system-clock" style="margin-top:10px;font-weight:600;color:#2563eb;font-size:0.9rem;"></div>
+        </div>
+    </aside>
 
-            <!-- Multi-Camera Grid -->
-            <div class="camera-grid">
-                {% for camera in cameras %}
-                <div class="camera-card">
-                    <div class="camera-header">
-                        <div class="camera-title"><i class="fas fa-video"></i> {{ camera }}</div>
-                        <span id="status-{{ camera }}" class="status-indicator status-online">Online</span>
+    <!-- ════════════════  MAIN CONTENT  ════════════════ -->
+    <main class="main-content">
+
+        <!-- Night Alert Banner -->
+        <div id="night-alert-banner" class="night-alert-banner">
+            <i class="fas fa-exclamation-triangle fa-2x"></i>
+            <div>
+                <strong>🚨 Night Movement Detected</strong>
+                <p id="night-alert-desc">Suspicious activity detected on Camera: Gate</p>
+            </div>
+            <audio id="alert-sound"
+                   src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+                   preload="auto"></audio>
+        </div>
+
+        <header>
+            <h1>Command Center</h1>
+            <p>Real-time AI monitoring &amp; Multi-camera stream</p>
+        </header>
+
+        <!-- Global Stats -->
+        <div class="stats-grid">
+            <div class="stat-card blue">
+                <div class="stat-icon"><i class="fas fa-sign-in-alt"></i></div>
+                <div class="stat-value" id="global-in">0</div>
+                <div class="stat-label">Total Entries</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon"><i class="fas fa-sign-out-alt"></i></div>
+                <div class="stat-value" id="global-out">0</div>
+                <div class="stat-label">Total Exits</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon"><i class="fas fa-moon"></i></div>
+                <div class="stat-value" id="global-night">0</div>
+                <div class="stat-label">Night Alerts</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon"><i class="fas fa-car"></i></div>
+                <div class="stat-value" id="global-vehicles">0</div>
+                <div class="stat-label">Vehicles Detected</div>
+            </div>
+        </div>
+
+        <!-- ══════════  CAMERA GRID  ══════════ -->
+        <div class="camera-grid">
+            {% for camera in cameras %}
+            <div class="camera-card" id="card-{{ camera }}">
+
+                <!-- Header row -->
+                <div class="camera-header">
+                    <div class="camera-title">
+                        <i class="fas fa-video"></i> {{ camera }}
                     </div>
-                    <div class="video-container">
-                        <img src="{{ url_for('video_feed', camera_name=camera) }}" alt="{{ camera }} Feed">
-                        <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">
-                            Live: <span id="counts-{{ camera }}">IN: 0 | OUT: 0</span>
+                    <span id="status-{{ camera }}" class="status-indicator status-online">Online</span>
+                </div>
+
+                <!-- Live stream -->
+                <div class="video-container">
+                    <img src="{{ url_for('video_feed', camera_name=camera) }}"
+                         alt="{{ camera }} Feed">
+                    <div style="position:absolute;bottom:10px;right:10px;
+                                background:rgba(0,0,0,0.55);color:white;
+                                padding:4px 8px;border-radius:4px;font-size:0.7rem;">
+                        Live: <span id="counts-{{ camera }}">IN: 0 | OUT: 0</span>
+                    </div>
+                </div>
+
+                <!-- ── Gate camera: live chips + speed history ── -->
+                {% if camera == 'Gate' %}
+                <!-- Live detection chips – Gate camera -->
+                <div class="camera-info-bar" id="gate-chips">
+                    <span class="info-chip chip-orange">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Last speed: <strong id="gate-last-speed">-- km/h</strong>
+                    </span>
+                    <span class="info-chip chip-blue">
+                        <i class="fas fa-car"></i>
+                        Last type: <strong id="gate-last-type">--</strong>
+                    </span>
+                    <span class="info-chip chip-teal">
+                        <i class="fas fa-id-card"></i>
+                        Plate: <strong id="gate-last-plate">--</strong>
+                    </span>
+                    <a href="/history" class="info-chip chip-purple" style="text-decoration:none;margin-left:auto;">
+                        <i class="fas fa-external-link-alt"></i> Full History
+                    </a>
+                </div>
+
+                <!-- ── Room camera: gender count panel ── -->
+                {% elif camera == 'Room' %}
+                <div class="camera-info-bar">
+                    <span class="info-chip chip-blue">
+                        <i class="fas fa-sign-in-alt"></i>
+                        IN: <strong id="room-in">0</strong>
+                    </span>
+                    <span class="info-chip chip-red">
+                        <i class="fas fa-sign-out-alt"></i>
+                        OUT: <strong id="room-out">0</strong>
+                    </span>
+                </div>
+                <!-- Gender count cards — right below IN/OUT -->
+                <div class="gender-panel">
+                    <div class="gender-card male">
+                        <div class="gender-icon"><i class="fas fa-male"></i></div>
+                        <div>
+                            <div class="gender-label">Male Count</div>
+                            <div class="gender-count" id="room-male">0</div>
+                        </div>
+                    </div>
+                    <div class="gender-card female">
+                        <div class="gender-icon"><i class="fas fa-female"></i></div>
+                        <div>
+                            <div class="gender-label">Female Count</div>
+                            <div class="gender-count" id="room-female">0</div>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
 
-            <!-- Bottom Sections -->
-            <div class="bottom-grid">
-                <!-- System Timeline -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-stream"></i> Activity Timeline</h3>
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">Last 15 events</span>
+                <!-- ── Parking camera: plate history strip ── -->
+                {% elif camera == 'Parking' %}
+                <div class="camera-info-bar">
+                    <span class="info-chip chip-orange">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Last speed: <strong id="parking-last-speed">-- km/h</strong>
+                    </span>
+                    <span class="info-chip chip-teal">
+                        <i class="fas fa-id-card"></i>
+                        Last plate: <strong id="parking-last-plate">--</strong>
+                    </span>
+                </div>
+                <div class="plate-strip" id="parking-plate-strip">
+                    <div class="plate-strip-title">
+                        <i class="fas fa-id-card"></i>&nbsp; Recorded Plates – Parking
                     </div>
-                    <div id="system-logs" class="logs-container">
-                        <!-- Filled via JS -->
+                    <div id="parking-plate-rows">
+                        <p style="color:#94a3b8;font-size:0.75rem;padding:4px 0;">No plates yet…</p>
                     </div>
                 </div>
+                {% endif %}
 
-                <!-- Night Activity Alerts -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-user-secret"></i> Night Alerts</h3>
-                        <a href="/history" style="font-size: 0.8rem;">View All</a>
-                    </div>
-                    <div id="night-alerts-list" class="alert-list">
-                        <!-- Filled via JS -->
-                    </div>
-                </div>
             </div>
-        </main>
-    </div>
+            {% endfor %}
+        </div>
 
-    <script>
-        const cameras = {{ cameras | tojson }};
-        
-        async function updateData() {
-            try {
-                // 1. Update Camera States
-                const stateResponse = await fetch('/api/camera_states');
-                const states = await stateResponse.json();
-                
-                for (const cam in states) {
-                    const statusEl = document.getElementById(`status-${cam}`);
-                    const countsEl = document.getElementById(`counts-${cam}`);
-                    
-                    if (statusEl) {
-                        statusEl.innerText = states[cam].status;
-                        statusEl.className = `status-indicator status-${states[cam].status.toLowerCase()}`;
-                    }
-                    if (countsEl) {
-                        countsEl.innerText = `IN: ${states[cam].in} | OUT: ${states[cam].out}`;
-                    }
-                }
+        <!-- Bottom Activity / Alerts -->
+        <div class="bottom-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-stream"></i> Activity Timeline</h3>
+                    <span style="font-size:0.8rem;color:var(--text-muted);">Last 15 events</span>
+                </div>
+                <div id="system-logs" class="logs-container"></div>
+            </div>
 
-                // 2. Update Global Stats
-                const statsResponse = await fetch('/api/stats');
-                const stats = await statsResponse.json();
-                document.getElementById('global-in').innerText = stats.entries;
-                document.getElementById('global-out').innerText = stats.exits;
-                document.getElementById('global-vehicles').innerText = stats.vehicles;
-                document.getElementById('global-night').innerText = stats.night_alerts;
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-secret"></i> Night Alerts</h3>
+                    <a href="/history" style="font-size:0.8rem;">View All</a>
+                </div>
+                <div id="night-alerts-list" class="alert-list"></div>
+            </div>
+        </div>
 
-                // 3. Update Recent Night Alerts
-                const alertResponse = await fetch('/api/night_alerts');
-                const alerts = await alertResponse.json();
-                const alertContainer = document.getElementById('night-alerts-list');
-                const banner = document.getElementById('night-alert-banner');
-                
-                if (alerts.length > 0) {
-                    banner.style.display = 'flex';
-                    document.getElementById('night-alert-desc').innerText = `Suspicious activity detected on Camera: ${alerts[0].camera_name}`;
-                    
-                    alertContainer.innerHTML = alerts.map(alert => `
-                        <div class="alert-item">
-                            <img src="/${alert.image_path}" alt="Alert">
-                            <div class="alert-info">
-                                <h4>${alert.object_type.toUpperCase()} - ${alert.camera_name}</h4>
-                                <span>${alert.time} | ${alert.date}</span>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    banner.style.display = 'none';
-                    alertContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 1rem;">No recent night alerts</p>';
-                }
+    </main>
+</div>
 
-                // 4. Update System Logs
-                const logResponse = await fetch('/api/logs');
-                const logs = await logResponse.json();
-                const logContainer = document.getElementById('system-logs');
-                if (logs.length > 0) {
-                    logContainer.innerHTML = logs.map(log => {
-                        const parts = log.split('] ');
-                        const time = parts[0]?.replace('[', '') || '--:--:--';
-                        const msg = parts[1] || log;
-                        return `
-                            <div class="log-item">
-                                <span class="log-time">${time.includes(' ') ? time.split(' ')[1] : time}</span>
-                                <span class="log-msg">${msg}</span>
-                            </div>
-                        `;
-                    }).join('');
-                } else {
-                    logContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 1rem;">No logs available</p>';
-                }
+<!-- ════════════════  JAVASCRIPT  ════════════════ -->
+<script>
+const cameras = {{ cameras | tojson }};
 
-            } catch (err) {
-                console.error("Dashboard update failed:", err);
+/* ── Vehicle-type icon class helper ─────────────────────────── */
+function vehicleIconClass(type) {
+    const map = { car:'car', motorcycle:'motorcycle', truck:'truck',
+                  bus:'bus', bicycle:'bicycle', person:'person' };
+    return map[type] || 'car';
+}
+
+/* ── Format speed badge ──────────────────────────────────────── */
+function speedBadge(spd) {
+    if (!spd && spd !== 0) return '';
+    return `<span class="gate-speed-badge"><i class="fas fa-tachometer-alt"></i> ${spd.toFixed(1)} km/h</span>`;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Update Gate info chips (last speed / type / plate only)
+   ──────────────────────────────────────────────────────────── */
+async function refreshGateChips() {
+    try {
+        const resp = await fetch('/api/recent_detections/Gate');
+        const rows = await resp.json();
+        if (!rows || !rows.length) return;
+
+        const latest = rows[0];
+        const speedEl = document.getElementById('gate-last-speed');
+        const typeEl  = document.getElementById('gate-last-type');
+        const plateEl = document.getElementById('gate-last-plate');
+
+        if (speedEl) speedEl.innerText = latest.speed_kmh != null
+            ? `${parseFloat(latest.speed_kmh).toFixed(1)} km/h` : '-- km/h';
+        if (typeEl)  typeEl.innerText  = latest.object_type
+            ? latest.object_type.toUpperCase() : '--';
+        if (plateEl) plateEl.innerText = latest.plate_number || '--';
+    } catch (e) { /* silent */ }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Build Parking plate history strip
+   ──────────────────────────────────────────────────────────── */
+async function refreshParkingPlates() {
+    try {
+        const resp = await fetch('/api/recent_detections/Parking');
+        const rows = await resp.json();
+        if (!rows.length) return;
+
+        // Latest chip
+        const latest = rows[0];
+        document.getElementById('parking-last-plate').innerText =
+            latest.plate_number || '--';
+        document.getElementById('parking-last-speed').innerText =
+            latest.speed_kmh != null ? `${parseFloat(latest.speed_kmh).toFixed(1)} km/h` : '-- km/h';
+
+        // Filter rows that have a plate
+        const plateRows = rows.filter(r => r.plate_number);
+        if (!plateRows.length) {
+            document.getElementById('parking-plate-rows').innerHTML =
+                '<p style="color:#94a3b8;font-size:0.75rem;padding:4px 0;">No plates yet…</p>';
+            return;
+        }
+
+        const html = plateRows.map(r => `
+            <div class="plate-row">
+                <span class="plate-badge">${r.plate_number}</span>
+                <span style="color:#64748b;font-size:0.72rem;">${(r.object_type||'').toUpperCase()}</span>
+                ${r.speed_kmh != null ? speedBadge(r.speed_kmh) : ''}
+                <span class="plate-cam"><i class="fas fa-video"></i> ${r.camera_name}</span>
+                <span class="plate-time" style="margin-left:auto;">${r.time || ''}</span>
+            </div>`).join('');
+
+        document.getElementById('parking-plate-rows').innerHTML = html;
+    } catch (e) { /* silent */ }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Main polling loop
+   ──────────────────────────────────────────────────────────── */
+async function updateData() {
+    try {
+        /* 1. Camera states (status, in/out, gender) */
+        const stateResp = await fetch('/api/camera_states');
+        const states    = await stateResp.json();
+
+        for (const cam in states) {
+            const statusEl = document.getElementById(`status-${cam}`);
+            const countsEl = document.getElementById(`counts-${cam}`);
+
+            if (statusEl) {
+                statusEl.innerText   = states[cam].status;
+                statusEl.className   = `status-indicator status-${states[cam].status.toLowerCase()}`;
+            }
+            if (countsEl) {
+                countsEl.innerText = `IN: ${states[cam].in} | OUT: ${states[cam].out}`;
+            }
+
+            /* Room camera – gender counts */
+            if (cam === 'Room') {
+                const maleEl   = document.getElementById('room-male');
+                const femaleEl = document.getElementById('room-female');
+                const roomIn   = document.getElementById('room-in');
+                const roomOut  = document.getElementById('room-out');
+                if (maleEl)   maleEl.innerText   = states[cam].male_count   || 0;
+                if (femaleEl) femaleEl.innerText  = states[cam].female_count || 0;
+                if (roomIn)   roomIn.innerText    = states[cam].in;
+                if (roomOut)  roomOut.innerText   = states[cam].out;
             }
         }
 
-        // Clock
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('system-clock').innerText = now.toLocaleTimeString();
+        /* 2. Global stats */
+        const statsResp = await fetch('/api/stats');
+        const stats     = await statsResp.json();
+        document.getElementById('global-in').innerText       = stats.entries;
+        document.getElementById('global-out').innerText      = stats.exits;
+        document.getElementById('global-vehicles').innerText = stats.vehicles;
+        document.getElementById('global-night').innerText    = stats.night_alerts;
+
+        /* 3. Night alerts */
+        const alertResp = await fetch('/api/night_alerts');
+        const alerts    = await alertResp.json();
+        const alertContainer = document.getElementById('night-alerts-list');
+        const banner         = document.getElementById('night-alert-banner');
+
+        if (alerts.length > 0) {
+            banner.style.display = 'flex';
+            document.getElementById('night-alert-desc').innerText =
+                `Suspicious activity on Camera: ${alerts[0].camera_name}`;
+            alertContainer.innerHTML = alerts.map(a => `
+                <div class="alert-item">
+                    <img src="/${a.image_path}" alt="Alert">
+                    <div class="alert-info">
+                        <h4>${a.object_type.toUpperCase()} – ${a.camera_name}</h4>
+                        <span>${a.time} | ${a.date}</span>
+                    </div>
+                </div>`).join('');
+        } else {
+            banner.style.display = 'none';
+            alertContainer.innerHTML =
+                '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent night alerts</p>';
         }
 
-        setInterval(updateData, 2000);
-        setInterval(updateClock, 1000);
-        updateClock();
-        updateData();
-    </script>
+        /* 4. System logs */
+        const logResp = await fetch('/api/logs');
+        const logs    = await logResp.json();
+        const logContainer = document.getElementById('system-logs');
+        if (logs.length > 0) {
+            logContainer.innerHTML = logs.map(log => {
+                const parts = log.split('] ');
+                const time  = parts[0]?.replace('[', '') || '--:--:--';
+                const msg   = parts[1] || log;
+                return `
+                <div class="log-item">
+                    <span class="log-time">${time.includes(' ') ? time.split(' ')[1] : time}</span>
+                    <span class="log-msg">${msg}</span>
+                </div>`;
+            }).join('');
+        } else {
+            logContainer.innerHTML =
+                '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No logs available</p>';
+        }
+
+        /* 5. Per-camera detail refreshes */
+        if (cameras.includes('Gate'))    refreshGateChips();
+        if (cameras.includes('Parking')) refreshParkingPlates();
+
+    } catch (err) {
+        console.error("Dashboard update failed:", err);
+    }
+}
+
+/* ── Clock ───────────────────────────────────────────────────── */
+function updateClock() {
+    document.getElementById('system-clock').innerText =
+        new Date().toLocaleTimeString();
+}
+
+setInterval(updateData, 2000);
+setInterval(updateClock, 1000);
+updateClock();
+updateData();
+</script>
 </body>
 </html>
