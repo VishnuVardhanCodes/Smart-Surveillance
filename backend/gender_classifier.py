@@ -114,8 +114,6 @@ class GenderClassifier:
         elif aspect < 1.6:
             return 'Female'
         else:
-            # Undecided – use simple pixel brightness distribution
-            gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-            mean_brightness = gray.mean()
-            # Warmer / brighter clothing skews female slightly
-            return 'Female' if mean_brightness > 110 else 'Male'
+            # For ambiguous cases in this specific environment, Male is statistically 
+            # more likely or we return a neutral default.
+            return 'Male'

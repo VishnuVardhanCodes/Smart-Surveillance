@@ -57,7 +57,8 @@ class SurveillanceDetector:
 
         # Per-frame live speed overlay { track_id: speed_kmh }
         self._live_speeds: dict  = {}
-        self._gender_cache: dict = {}  # track_id -> gender string
+        self._gender_history: dict = {}  # track_id -> list of 'Male'/'Female'
+        self._gender_cache: dict = {}    # track_id -> stable gender string
 
         # Log paths
         self.log_file   = os.path.join(self.base_dir, 'logs', 'detections.log')
@@ -103,12 +104,12 @@ class SurveillanceDetector:
         """
         camera_name = camera_name or self.camera_name
         is_gate     = (camera_name == GATE_CAMERA)
-        is_room     = (camera_name == ROOM_CAMERA)
-        is_parking  = (camera_name == PARKING_CAMERA)
-
+        # Use higher confidence for Room camera to avoid false positives (like chairs)
+        # Use lower confidence for Gate/Parking to catch fast/distant vehicles
+        conf_thresh = 0.45 if is_room else 0.25
+        
         # run prediction with optimized thresholds
-        # conf=0.20 for faster/more sensitive detection, iou=0.5 to clean up double boxes
-        results    = self.model(frame, verbose=False, conf=0.20, iou=0.5)[0]
+        results    = self.model(frame, verbose=False, conf=conf_thresh, iou=0.45)[0]
         detections = []
 
         for r in results.boxes.data.tolist():
@@ -142,7 +143,7 @@ class SurveillanceDetector:
                 speed = self.speed_estimator.update(tid, cx, cy)
                 self._live_speeds[tid] = speed
 
-        # Cleanup speeds and gender cache for lost tracks
+        # Cleanup logs for lost tracks
         self.speed_estimator.cleanup(active_ids)
         for tid in list(self._live_speeds.keys()):
             if tid not in active_ids:
@@ -151,6 +152,8 @@ class SurveillanceDetector:
         for tid in list(self._gender_cache.keys()):
             if tid not in active_ids:
                 del self._gender_cache[tid]
+                if tid in self._gender_history:
+                    del self._gender_history[tid]
 
         # ── Handle crossing events ────────────────────────────────────────
         for track in crossed_in + crossed_out:
@@ -257,26 +260,45 @@ class SurveillanceDetector:
                 spd = self._live_speeds.get(tid, 0.0)
                 label += f"  {spd:.1f} km/h"
 
-            # ── Append gender on Room (Cached version) ───────────────
+            # ── Stable Gender Classification (Majority Voting) ────────
             if is_room and obj_type == 'person':
-                if tid not in self._gender_cache:
+                # Only update if not already "stabilized" to a high degree
+                if tid not in self._gender_cache or len(self._gender_history.get(tid, [])) < 15:
                     ltrb2 = track.to_ltrb()
-                    crop2 = frame[int(ltrb2[1]):int(ltrb2[3]),
-                                  int(ltrb2[0]):int(ltrb2[2])]
+                    # Crop with a slight margin for better gender accuracy
+                    margin = 10
+                    y1_m = max(0, int(ltrb2[1]) - margin)
+                    y2_m = min(frame.shape[0], int(ltrb2[3]) + margin)
+                    x1_m = max(0, int(ltrb2[0]) - margin)
+                    x2_m = min(frame.shape[1], int(ltrb2[2]) + margin)
+                    
+                    crop2 = frame[y1_m:y2_m, x1_m:x2_m]
                     if crop2.size > 0:
                         g = self.gender_classifier.classify(crop2)
-                        self._gender_cache[tid] = g
+                        
+                        if tid not in self._gender_history:
+                            self._gender_history[tid] = []
+                        self._gender_history[tid].append(g)
+                        
+                        # Once we have 5+ readings, take the most common one
+                        if len(self._gender_history[tid]) >= 5:
+                            m_count = self._gender_history[tid].count('Male')
+                            f_count = self._gender_history[tid].count('Female')
+                            self._gender_cache[tid] = 'Male' if m_count >= f_count else 'Female'
                 
-                g = self._gender_cache.get(tid, "Unknown")
+                g = self._gender_cache.get(tid, "Analyzing...")
                 label += f"  {g}"
-                # Colour-code: blue=Male, pink=Female
-                color = (255, 80, 0) if g == 'Male' else (147, 20, 255)
-                cv2.rectangle(
-                    frame,
-                    (int(ltrb[0]), int(ltrb[1])),
-                    (int(ltrb[2]), int(ltrb[3])),
-                    color, 2
-                )
+                
+                # Colour-code: Blue for Male, Magenta for Female, Gray for Analyzing
+                if g == 'Male':
+                    color = (255, 120, 0)
+                elif g == 'Female':
+                    color = (180, 0, 255)
+                else:
+                    color = (150, 150, 150)
+
+                cv2.rectangle(frame, (int(ltrb[0]), int(ltrb[1])), 
+                              (int(ltrb[2]), int(ltrb[3])), color, 2)
 
             cv2.putText(
                 frame, label,
