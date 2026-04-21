@@ -1,9 +1,12 @@
+flask
 opencv-python
 numpy
 ultralytics
 easyocr
-flask
-scipy
-pandas
 deep-sort-realtime
+pandas
+reportlab
+matplotlib
+schedule
 python-dotenv
+scipy

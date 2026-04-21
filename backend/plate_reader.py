@@ -1,12 +1,17 @@
 import easyocr
 import cv2
 import numpy as np
+import os
 
 class PlateReader:
     def __init__(self):
-        # Initialize reader for English (can add more languages)
-        # Setting gpu=False as default for compatibility, set to True if GPU available
-        self.reader = easyocr.Reader(['en'], gpu=False)
+        # Initialize reader for English
+        # model_storage_directory ensures we can keep models inside the project for offline use
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        model_dir = os.path.join(base_dir, 'models', 'ocr')
+        os.makedirs(model_dir, exist_ok=True)
+        
+        self.reader = easyocr.Reader(['en'], gpu=False, model_storage_directory=model_dir)
 
     def read_plate(self, image):
         """
