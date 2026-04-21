@@ -276,7 +276,13 @@ class DatabaseManager:
 
     # ─────────────────────────────────────────────────────────────────────
     def search_detections(self, date=None, time=None,
-                          plate_number=None, camera_name=None):
+                          plate_number=None, camera_name=None,
+                          object_type=None):
+        """
+        Flexible detection search.
+        All parameters are optional and ANDed together.
+        Passing no parameters returns all records (most recent first).
+        """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -296,6 +302,9 @@ class DatabaseManager:
         if camera_name:
             query += " AND camera_name = ?"
             params.append(camera_name)
+        if object_type:
+            query += " AND object_type = ?"
+            params.append(object_type)
 
         query += " ORDER BY id DESC"
         cursor.execute(query, params)

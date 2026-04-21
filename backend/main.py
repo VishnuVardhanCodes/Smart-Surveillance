@@ -1,5 +1,5 @@
 from flask import (Flask, render_template, Response, request,
-                   jsonify, send_from_directory, send_file)
+                   jsonify, send_from_directory, send_file, abort)
 import cv2
 import threading
 import os
@@ -75,6 +75,36 @@ def vehicles():
     detections = db.get_detections_by_category(['car', 'bus', 'truck'])
     return render_template('history.html',
                            title="VEHICLE DETECTIONS", detections=detections)
+
+
+@app.route('/search')
+def search_page():
+    """Render the search page (results loaded via JS + POST API)."""
+    return render_template('search.html')
+
+
+@app.route('/api/search', methods=['POST'])
+def api_search():
+    """
+    Accept a JSON body with optional filter fields:
+      date, time, plate_number, camera_name, object_type
+    Return matching detection rows as JSON.
+    """
+    body        = request.get_json(force=True, silent=True) or {}
+    date        = body.get('date')        or None
+    time_val    = body.get('time')        or None
+    plate       = body.get('plate_number') or None
+    camera      = body.get('camera_name') or None
+    object_type = body.get('object_type') or None
+
+    rows = db.search_detections(
+        date=date,
+        time=time_val,
+        plate_number=plate,
+        camera_name=camera,
+        object_type=object_type,
+    )
+    return jsonify([dict(r) for r in rows])
 
 
 @app.route('/plates')
