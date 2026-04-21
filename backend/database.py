@@ -2,10 +2,10 @@ import sqlite3
 import os
 from datetime import datetime
 
+
 class DatabaseManager:
     def __init__(self, db_path=None):
         if db_path is None:
-            # Default to 'database/surveillance.db' relative to this file
             base_dir = os.path.dirname(os.path.abspath(__file__))
             self.db_path = os.path.join(base_dir, 'database', 'surveillance.db')
         else:
@@ -13,102 +13,121 @@ class DatabaseManager:
         self._init_db()
         self._migrate_db()
 
+    # ─────────────────────────────────────────────────────────────────────
     def _init_db(self):
-        """Initialize the database and create tables if they don't exist."""
-        if not os.path.exists(os.path.dirname(self.db_path)):
-            os.makedirs(os.path.dirname(self.db_path))
-            
-        conn = sqlite3.connect(self.db_path)
+        """Create tables if they do not already exist."""
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+
+        conn   = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        # Main detections table
+
+        # ── Main detections table ────────────────────────────────────────
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS detections (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                time TEXT NOT NULL,
-                object_type TEXT NOT NULL,
-                event_type TEXT DEFAULT 'Entry',
-                track_id INTEGER,
-                plate_number TEXT,
-                image_path TEXT NOT NULL,
-                camera_name TEXT DEFAULT 'Main'
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                date           TEXT    NOT NULL,
+                time           TEXT    NOT NULL,
+                object_type    TEXT    NOT NULL,
+                event_type     TEXT    DEFAULT 'Entry',
+                track_id       INTEGER,
+                plate_number   TEXT,
+                plate_img_path TEXT,
+                image_path     TEXT    NOT NULL,
+                camera_name    TEXT    DEFAULT 'Main',
+                speed_kmh      REAL,
+                gender         TEXT
             )
         ''')
-        
-        # Night Alerts table
+
+        # ── Night Alerts table ───────────────────────────────────────────
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS night_alerts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                time TEXT NOT NULL,
-                object_type TEXT NOT NULL,
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                date        TEXT    NOT NULL,
+                time        TEXT    NOT NULL,
+                object_type TEXT    NOT NULL,
                 plate_number TEXT,
-                image_path TEXT NOT NULL,
-                camera_name TEXT NOT NULL
+                image_path  TEXT    NOT NULL,
+                camera_name TEXT    NOT NULL
             )
         ''')
-        
+
         conn.commit()
         conn.close()
 
+    # ─────────────────────────────────────────────────────────────────────
     def _migrate_db(self):
-        """Handle schema migrations to ensure existing databases are up to date."""
-        conn = sqlite3.connect(self.db_path)
+        """Add new columns to existing databases (non-destructive migration)."""
+        conn   = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        # Fetch current column names
+
         cursor.execute("PRAGMA table_info(detections)")
-        columns = [column[1] for column in cursor.fetchall()]
-        
-        # Add missing columns if they don't exist
-        if 'event_type' not in columns:
-            cursor.execute("ALTER TABLE detections ADD COLUMN event_type TEXT DEFAULT 'Entry'")
-            
-        if 'track_id' not in columns:
-            cursor.execute("ALTER TABLE detections ADD COLUMN track_id INTEGER")
-            
-        if 'plate_number' not in columns:
-            cursor.execute("ALTER TABLE detections ADD COLUMN plate_number TEXT")
+        columns = [col[1] for col in cursor.fetchall()]
 
-        if 'camera_name' not in columns:
-            cursor.execute("ALTER TABLE detections ADD COLUMN camera_name TEXT DEFAULT 'Main'")
-            
+        migrations = {
+            'event_type':     "ALTER TABLE detections ADD COLUMN event_type     TEXT DEFAULT 'Entry'",
+            'track_id':       "ALTER TABLE detections ADD COLUMN track_id       INTEGER",
+            'plate_number':   "ALTER TABLE detections ADD COLUMN plate_number   TEXT",
+            'plate_img_path': "ALTER TABLE detections ADD COLUMN plate_img_path TEXT",
+            'camera_name':    "ALTER TABLE detections ADD COLUMN camera_name    TEXT DEFAULT 'Main'",
+            'speed_kmh':      "ALTER TABLE detections ADD COLUMN speed_kmh      REAL",
+            'gender':         "ALTER TABLE detections ADD COLUMN gender         TEXT",
+        }
+
+        for col, sql in migrations.items():
+            if col not in columns:
+                cursor.execute(sql)
+
         conn.commit()
         conn.close()
 
-    def insert_detection(self, object_type, image_path, event_type='Entry', track_id=None, plate_number=None, camera_name='Main'):
-        """Insert a new detection record."""
-        now = datetime.now()
+    # ─────────────────────────────────────────────────────────────────────
+    def insert_detection(self, object_type, image_path,
+                         event_type='Entry', track_id=None,
+                         plate_number=None, camera_name='Main',
+                         speed_kmh=None, gender=None,
+                         plate_img_path=None):
+        """Persist one detection event."""
+        now      = datetime.now()
         date_str = now.strftime("%Y-%m-%d")
         time_str = now.strftime("%H:%M:%S")
-        
-        conn = sqlite3.connect(self.db_path)
+
+        conn   = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO detections (date, time, object_type, event_type, track_id, plate_number, image_path, camera_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (date_str, time_str, object_type, event_type, track_id, plate_number, image_path, camera_name))
+            INSERT INTO detections
+                (date, time, object_type, event_type, track_id,
+                 plate_number, plate_img_path, image_path,
+                 camera_name, speed_kmh, gender)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (date_str, time_str, object_type, event_type, track_id,
+              plate_number, plate_img_path, image_path,
+              camera_name, speed_kmh, gender))
         conn.commit()
         conn.close()
         return True
 
-    def insert_night_alert(self, object_type, image_path, plate_number=None, camera_name='Main'):
-        """Insert a night alert record."""
-        now = datetime.now()
+    # ─────────────────────────────────────────────────────────────────────
+    def insert_night_alert(self, object_type, image_path,
+                           plate_number=None, camera_name='Main'):
+        """Persist one night-alert event."""
+        now      = datetime.now()
         date_str = now.strftime("%Y-%m-%d")
         time_str = now.strftime("%H:%M:%S")
-        
-        conn = sqlite3.connect(self.db_path)
+
+        conn   = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO night_alerts (date, time, object_type, plate_number, image_path, camera_name)
+            INSERT INTO night_alerts
+                (date, time, object_type, plate_number, image_path, camera_name)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (date_str, time_str, object_type, plate_number, image_path, camera_name))
+        ''', (date_str, time_str, object_type, plate_number,
+              image_path, camera_name))
         conn.commit()
         conn.close()
         return True
 
+    # ─────────────────────────────────────────────────────────────────────
     def get_all_detections(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -122,7 +141,9 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM night_alerts ORDER BY id DESC LIMIT ?', (limit,))
+        cursor.execute(
+            'SELECT * FROM night_alerts ORDER BY id DESC LIMIT ?', (limit,)
+        )
         rows = cursor.fetchall()
         conn.close()
         return rows
@@ -132,86 +153,137 @@ class DatabaseManager:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         placeholders = ', '.join(['?'] * len(categories))
-        query = f'SELECT * FROM detections WHERE object_type IN ({placeholders}) ORDER BY id DESC'
+        query = (f'SELECT * FROM detections '
+                 f'WHERE object_type IN ({placeholders}) ORDER BY id DESC')
         cursor.execute(query, categories)
         rows = cursor.fetchall()
         conn.close()
         return rows
 
-    def get_stats_for_report(self, date_str):
-        """Fetch statistics for a specific date for PDF reporting."""
+    # ─────────────────────────────────────────────────────────────────────
+    def get_detections_by_camera(self, camera_name):
+        """Return all detections for a specific camera, newest first."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
-        # Basic counts
-        cursor.execute("SELECT COUNT(*) FROM detections WHERE date = ? AND event_type = 'Entry'", (date_str,))
+        cursor.execute(
+            'SELECT * FROM detections WHERE camera_name = ? ORDER BY id DESC',
+            (camera_name,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
+    # ─────────────────────────────────────────────────────────────────────
+    def get_plate_detections(self):
+        """Return all detections that contain a number plate."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT * FROM detections '
+            'WHERE plate_number IS NOT NULL '
+            'ORDER BY id DESC'
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
+    # ─────────────────────────────────────────────────────────────────────
+    def get_stats_for_report(self, date_str):
+        """Statistics for a specific date used in PDF report generation."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM detections WHERE date=? AND event_type='Entry'",
+            (date_str,)
+        )
         entries = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM detections WHERE date = ? AND event_type = 'Exit'", (date_str,))
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM detections WHERE date=? AND event_type='Exit'",
+            (date_str,)
+        )
         exits = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM detections WHERE date = ? AND object_type IN ('car', 'bus', 'truck', 'motorcycle')", (date_str,))
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM detections "
+            "WHERE date=? AND object_type IN ('car','bus','truck','motorcycle')",
+            (date_str,)
+        )
         vehicles = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(DISTINCT plate_number) FROM detections WHERE date = ? AND plate_number IS NOT NULL", (date_str,))
+
+        cursor.execute(
+            "SELECT COUNT(DISTINCT plate_number) FROM detections "
+            "WHERE date=? AND plate_number IS NOT NULL",
+            (date_str,)
+        )
         unique_plates = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM night_alerts WHERE date = ?", (date_str,))
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM night_alerts WHERE date=?", (date_str,)
+        )
         night_alerts = cursor.fetchone()[0]
-        
-        # Hourly activity
+
         cursor.execute("""
-            SELECT substr(time, 1, 2) as hour, COUNT(*) as count 
-            FROM detections 
-            WHERE date = ? 
+            SELECT substr(time, 1, 2) AS hour, COUNT(*) AS count
+            FROM detections
+            WHERE date = ?
             GROUP BY hour
         """, (date_str,))
         hourly_data = {row['hour']: row['count'] for row in cursor.fetchall()}
-        
+
         conn.close()
         return {
-            'entries': entries,
-            'exits': exits,
-            'vehicles': vehicles,
+            'entries':      entries,
+            'exits':        exits,
+            'vehicles':     vehicles,
             'unique_plates': unique_plates,
             'night_alerts': night_alerts,
-            'hourly_data': hourly_data
+            'hourly_data':  hourly_data,
         }
 
+    # ─────────────────────────────────────────────────────────────────────
     def get_global_stats(self):
-        """Fetch total statistics for the global dashboard."""
-        conn = sqlite3.connect(self.db_path)
+        """Aggregate statistics for the dashboard header cards."""
+        conn   = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        cursor.execute("SELECT COUNT(*) FROM detections WHERE event_type = 'Entry'")
+
+        cursor.execute("SELECT COUNT(*) FROM detections WHERE event_type='Entry'")
         entries = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM detections WHERE event_type = 'Exit'")
+
+        cursor.execute("SELECT COUNT(*) FROM detections WHERE event_type='Exit'")
         exits = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM detections WHERE object_type IN ('car', 'bus', 'truck', 'motorcycle')")
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM detections "
+            "WHERE object_type IN ('car','bus','truck','motorcycle')"
+        )
         vehicles = cursor.fetchone()[0]
-        
+
         cursor.execute("SELECT COUNT(*) FROM night_alerts")
         night_alerts = cursor.fetchone()[0]
-        
+
         conn.close()
         return {
-            'entries': entries,
-            'exits': exits,
-            'vehicles': vehicles,
-            'night_alerts': night_alerts
+            'entries':      entries,
+            'exits':        exits,
+            'vehicles':     vehicles,
+            'night_alerts': night_alerts,
         }
 
-    def search_detections(self, date=None, time=None, plate_number=None, camera_name=None):
+    # ─────────────────────────────────────────────────────────────────────
+    def search_detections(self, date=None, time=None,
+                          plate_number=None, camera_name=None):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
-        query = "SELECT * FROM detections WHERE 1=1"
+
+        query  = "SELECT * FROM detections WHERE 1=1"
         params = []
-        
+
         if date:
             query += " AND date = ?"
             params.append(date)
@@ -224,7 +296,7 @@ class DatabaseManager:
         if camera_name:
             query += " AND camera_name = ?"
             params.append(camera_name)
-            
+
         query += " ORDER BY id DESC"
         cursor.execute(query, params)
         rows = cursor.fetchall()
