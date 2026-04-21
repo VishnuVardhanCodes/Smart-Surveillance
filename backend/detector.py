@@ -56,7 +56,8 @@ class SurveillanceDetector:
         }
 
         # Per-frame live speed overlay { track_id: speed_kmh }
-        self._live_speeds: dict = {}
+        self._live_speeds: dict  = {}
+        self._gender_cache: dict = {}  # track_id -> gender string
 
         # Log paths
         self.log_file   = os.path.join(self.base_dir, 'logs', 'detections.log')
@@ -105,7 +106,9 @@ class SurveillanceDetector:
         is_room     = (camera_name == ROOM_CAMERA)
         is_parking  = (camera_name == PARKING_CAMERA)
 
-        results    = self.model(frame, verbose=False)[0]
+        # run prediction with optimized thresholds
+        # conf=0.20 for faster/more sensitive detection, iou=0.5 to clean up double boxes
+        results    = self.model(frame, verbose=False, conf=0.20, iou=0.5)[0]
         detections = []
 
         for r in results.boxes.data.tolist():
@@ -139,11 +142,15 @@ class SurveillanceDetector:
                 speed = self.speed_estimator.update(tid, cx, cy)
                 self._live_speeds[tid] = speed
 
-        # Cleanup speeds for lost tracks
+        # Cleanup speeds and gender cache for lost tracks
         self.speed_estimator.cleanup(active_ids)
         for tid in list(self._live_speeds.keys()):
             if tid not in active_ids:
                 del self._live_speeds[tid]
+        
+        for tid in list(self._gender_cache.keys()):
+            if tid not in active_ids:
+                del self._gender_cache[tid]
 
         # ── Handle crossing events ────────────────────────────────────────
         for track in crossed_in + crossed_out:
@@ -250,22 +257,26 @@ class SurveillanceDetector:
                 spd = self._live_speeds.get(tid, 0.0)
                 label += f"  {spd:.1f} km/h"
 
-            # ── Append gender on Room ───────────────────────────────
+            # ── Append gender on Room (Cached version) ───────────────
             if is_room and obj_type == 'person':
-                ltrb2 = track.to_ltrb()
-                crop2 = frame[int(ltrb2[1]):int(ltrb2[3]),
-                              int(ltrb2[0]):int(ltrb2[2])]
-                if crop2.size > 0:
-                    g = self.gender_classifier.classify(crop2)
-                    label += f"  {g}"
-                    # Colour-code: blue=Male, pink=Female
-                    color = (255, 80, 0) if g == 'Male' else (147, 20, 255)
-                    cv2.rectangle(
-                        frame,
-                        (int(ltrb2[0]), int(ltrb2[1])),
-                        (int(ltrb2[2]), int(ltrb2[3])),
-                        color, 2
-                    )
+                if tid not in self._gender_cache:
+                    ltrb2 = track.to_ltrb()
+                    crop2 = frame[int(ltrb2[1]):int(ltrb2[3]),
+                                  int(ltrb2[0]):int(ltrb2[2])]
+                    if crop2.size > 0:
+                        g = self.gender_classifier.classify(crop2)
+                        self._gender_cache[tid] = g
+                
+                g = self._gender_cache.get(tid, "Unknown")
+                label += f"  {g}"
+                # Colour-code: blue=Male, pink=Female
+                color = (255, 80, 0) if g == 'Male' else (147, 20, 255)
+                cv2.rectangle(
+                    frame,
+                    (int(ltrb[0]), int(ltrb[1])),
+                    (int(ltrb[2]), int(ltrb[3])),
+                    color, 2
+                )
 
             cv2.putText(
                 frame, label,

@@ -66,7 +66,12 @@ class MultiCameraManager:
                 self.status[name] = "Online"
 
             while True:
+                # Read multiple frames to clear the buffer and get the VERY LATEST one
+                # This ensures we don't process "old" laggy frames
+                for _ in range(5):
+                    cap.grab()
                 success, frame = cap.read()
+
                 if not success:
                     print(f"[CameraManager] Lost connection: {name}. Reconnecting…")
                     with self.lock:
