@@ -1,5 +1,5 @@
 {
   "Gate": "rtsp://gate_camera_placeholder",
-  "Room": "0",
+  "Room": "rtsp://room_camera_placeholder",
   "Parking": "rtsp://parking_camera_placeholder"
 }

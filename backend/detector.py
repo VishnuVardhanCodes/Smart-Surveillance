@@ -11,6 +11,7 @@ from night_detector import NightDetector
 from speed_estimator import SpeedEstimator
 from gender_classifier import GenderClassifier
 from helmet_detector import HelmetDetector
+from seatbelt_detector import SeatbeltDetector
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -49,6 +50,10 @@ class SurveillanceDetector:
         # ── Change 3: Helmet Detector (PPE Compliance) ────────────────────
         self.helmet_detector = HelmetDetector()
         self._ppe_violations_cache = {}  # track_id -> bool (has_violated)
+
+        # ── Change 4: Seatbelt Detector ──────────────────────────────────
+        self.seatbelt_detector = SeatbeltDetector()
+        self._seatbelt_violations_cache = {} # track_id -> bool
         self.target_classes = {
             0: 'person',
             1: 'bicycle',
@@ -67,7 +72,7 @@ class SurveillanceDetector:
         self.log_file   = os.path.join(self.base_dir, 'logs', 'detections.log')
         self.system_log = os.path.join(self.base_dir, 'logs', 'system.log')
 
-        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe']:
+        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt']:
             full_path = os.path.join(self.base_dir, path)
             if not os.path.exists(full_path):
                 os.makedirs(full_path)
@@ -255,6 +260,28 @@ class SurveillanceDetector:
                                 f"PPE VIOLATION: No Helmet detected at {camera_name}"
                             )
 
+            # ── Seatbelt Detection (4-wheelers) ───────────────────────
+            if obj_type in ['car', 'bus', 'truck']:
+                if crop.size > 0:
+                    has_sb, sb_score, sb_dets = self.seatbelt_detector.detect(crop)
+                    
+                    if has_sb is False: # Violation
+                        if tid not in self._seatbelt_violations_cache:
+                            violation_img = self.save_image(
+                                frame, f"seatbelt_violation", "seatbelt",
+                                x1, y1, x2, y2
+                            )
+                            self.db.insert_seatbelt_violation(
+                                vehicle_type=obj_type,
+                                violation_type="No Seatbelt",
+                                image_path=violation_img,
+                                camera_name=camera_name
+                            )
+                            self._seatbelt_violations_cache[tid] = True
+                            self.log_system_event(
+                                f"SEATBELT VIOLATION: No seatbelt detected on {obj_type} at {camera_name}"
+                            )
+
             self.log_system_event(
                 f"EVENT: {obj_type} ({event_type}) at {camera_name}"
                 + (f" | {speed_kmh:.1f} km/h" if speed_kmh else "")
@@ -347,6 +374,28 @@ class SurveillanceDetector:
                     cv2.putText(frame, ppe_label,
                                 (int(ltrb_p[0]), int(ltrb_p[3]) + 20),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, ppe_color, 2)
+
+            # ── Seatbelt Visual Indicator ─────────────────────────
+            if obj_type in ['car', 'bus', 'truck']:
+                ltrb_v = track.to_ltrb()
+                crop_v = frame[max(0, int(ltrb_v[1])):min(frame.shape[0], int(ltrb_v[3])),
+                               max(0, int(ltrb_v[0])):min(frame.shape[1], int(ltrb_v[2]))]
+                
+                if crop_v.size > 0:
+                    has_s, _, _ = self.seatbelt_detector.detect(crop_v)
+                    if has_s is True:
+                        sb_label = "SEATBELT: OK"
+                        sb_color = (0, 255, 0)
+                    elif has_s is False:
+                        sb_label = "SEATBELT: MISSING"
+                        sb_color = (0, 0, 255)
+                    else:
+                        sb_label = "SEATBELT: CHECKING"
+                        sb_color = (255, 255, 255)
+                    
+                    cv2.putText(frame, sb_label,
+                                (int(ltrb_v[0]), int(ltrb_v[3]) + 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, sb_color, 2)
 
             cv2.putText(
                 frame, label,
