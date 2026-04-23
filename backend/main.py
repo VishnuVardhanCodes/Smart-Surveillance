@@ -205,6 +205,12 @@ def mobile_walking_violations():
     return jsonify([dict(row) for row in violations])
 
 
+@app.route('/api/restricted_violations')
+def restricted_violations():
+    violations = db.get_recent_restricted_violations(5)
+    return jsonify([dict(row) for row in violations])
+
+
 @app.route('/api/stats')
 def get_global_stats():
     stats = db.get_global_stats()

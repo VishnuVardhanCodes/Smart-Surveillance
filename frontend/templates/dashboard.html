@@ -349,7 +349,41 @@
             </div>
         </div>
 
-        <header>
+        <!-- Seatbelt Violation Banner -->
+        <div id="seatbelt-alert-banner" class="seatbelt-alert-banner">
+            <i class="fas fa-car-crash fa-2x"></i>
+            <div>
+                <strong>⚠ SEATBELT VIOLATION — No Seatbelt Detected</strong>
+                <p id="seatbelt-alert-desc">Driver without seatbelt detected on Camera: Gate</p>
+            </div>
+        </div>
+
+        <!-- Mobile Violation Banner -->
+        <div id="mobile-alert-banner" class="mobile-alert-banner">
+            <i class="fas fa-mobile-alt fa-2x"></i>
+            <div>
+                <strong>⚠ MOBILE USAGE VIOLATION — Phone Detected While Driving</strong>
+                <p id="mobile-alert-desc">Driver using mobile phone detected on Camera: Gate</p>
+            </div>
+        </div>
+
+        <!-- Mobile Walking Violation Banner -->
+        <div id="muw-alert-banner" class="muw-alert-banner">
+            <i class="fas fa-walking fa-2x"></i>
+            <div>
+                <strong>⚠ UNSAFE MOBILE USAGE — Person Talking While Walking</strong>
+                <p id="muw-alert-desc">Unsafe mobile usage detected on Camera: Room</p>
+            </div>
+        </div>
+
+        <!-- Restricted Zone Violation Banner -->
+        <div id="restricted-alert-banner" class="restricted-alert-banner">
+            <i class="fas fa-door-closed fa-2x"></i>
+            <div>
+                <strong>⚠ RESTRICTED AREA BREACH — Unauthorized Pathway Entry</strong>
+                <p id="restricted-alert-desc">Restricted area entry detected on Camera: Gate</p>
+            </div>
+        </div>
             <h1>Command Center</h1>
             <p>Real-time AI monitoring &amp; Multi-camera stream</p>
         </header>
@@ -380,6 +414,26 @@
                 <div class="stat-icon" style="background: #ef4444;"><i class="fas fa-user-slash"></i></div>
                 <div class="stat-value" id="global-ppe" style="color: #991b1b;">0</div>
                 <div class="stat-label">Helmet Violations Today</div>
+            </div>
+            <div class="stat-card" style="border-color: #b91c1c; background: #fffafa;">
+                <div class="stat-icon" style="background: #b91c1c;"><i class="fas fa-exclamation-circle"></i></div>
+                <div class="stat-value" id="global-seatbelt" style="color: #b91c1c;">0</div>
+                <div class="stat-label">Seatbelt Violations</div>
+            </div>
+            <div class="stat-card" style="border-color: #b45309; background: #fffbeb;">
+                <div class="stat-icon" style="background: #b45309;"><i class="fas fa-mobile"></i></div>
+                <div class="stat-value" id="global-mobile" style="color: #b45309;">0</div>
+                <div class="stat-label">Mobile Usage Violations</div>
+            </div>
+            <div class="stat-card" style="border-color: #92400e; background: #fffbeb;">
+                <div class="stat-icon" style="background: #92400e;"><i class="fas fa-blind"></i></div>
+                <div class="stat-value" id="global-walking-mobile" style="color: #92400e;">0</div>
+                <div class="stat-label">Walking Mobile Usage</div>
+            </div>
+            <div class="stat-card" style="border-color: #450a0a; background: #fef2f2;">
+                <div class="stat-icon" style="background: #450a0a;"><i class="fas fa-door-open"></i></div>
+                <div class="stat-value" id="global-restricted" style="color: #450a0a;">0</div>
+                <div class="stat-label">Restricted Zone Breaches</div>
             </div>
         </div>
 
@@ -514,6 +568,38 @@
                 </div>
                 <div id="ppe-violations-list" class="alert-list"></div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-slash"></i> Seatbelt Violations</h3>
+                    <a href="/history" style="font-size:0.8rem;">View All</a>
+                </div>
+                <div id="seatbelt-violations-list" class="alert-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-mobile-alt"></i> Mobile Usage Violations</h3>
+                    <a href="/history" style="font-size:0.8rem;">View All</a>
+                </div>
+                <div id="mobile-violations-list" class="alert-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-walking"></i> Walking Mobile Usage</h3>
+                    <a href="/history" style="font-size:0.8rem;">View All</a>
+                </div>
+                <div id="muw-violations-list" class="alert-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-shield-alt"></i> Restricted Zone Breaches</h3>
+                    <a href="/history" style="font-size:0.8rem;">View All</a>
+                </div>
+                <div id="restricted-violations-list" class="alert-list"></div>
+            </div>
         </div>
 
     </main>
@@ -637,6 +723,10 @@ async function updateData() {
         document.getElementById('global-vehicles').innerText = stats.vehicles;
         document.getElementById('global-night').innerText    = stats.night_alerts;
         document.getElementById('global-ppe').innerText      = stats.helmet_violations || 0;
+        document.getElementById('global-seatbelt').innerText = stats.seatbelt_violations || 0;
+        document.getElementById('global-mobile').innerText   = stats.mobile_violations || 0;
+        document.getElementById('global-walking-mobile').innerText = stats.mobile_walking_violations || 0;
+        document.getElementById('global-restricted').innerText     = stats.restricted_violations || 0;
 
         /* 3. Night alerts */
         const alertResp = await fetch('/api/night_alerts');
@@ -684,6 +774,102 @@ async function updateData() {
             ppeBanner.style.display = 'none';
             ppeContainer.innerHTML = 
                 '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent PPE violations</p>';
+        }
+
+        /* 3.6 Seatbelt Violations */
+        const sbResp = await fetch('/api/seatbelt_violations');
+        const sbViolations = await sbResp.json();
+        const sbContainer = document.getElementById('seatbelt-violations-list');
+        const sbBanner    = document.getElementById('seatbelt-alert-banner');
+
+        if (sbViolations.length > 0) {
+            sbBanner.style.display = 'flex';
+            document.getElementById('seatbelt-alert-desc').innerText = 
+                `Driver without seatbelt detected on Camera: ${sbViolations[0].camera_name}`;
+            sbContainer.innerHTML = sbViolations.map(v => `
+                <div class="sb-violation-item">
+                    <img src="/${v.image_path}" alt="Seatbelt Violation">
+                    <div class="alert-info">
+                        <h4>${v.camera_name} <span class="ppe-badge-red" style="background:#fee2e2;color:#b91c1c;">No Seatbelt</span></h4>
+                        <span>${(v.vehicle_type||'').toUpperCase()} | ${v.time}</span>
+                    </div>
+                </div>`).join('');
+        } else {
+            sbBanner.style.display = 'none';
+            sbContainer.innerHTML = 
+                '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent seatbelt violations</p>';
+        }
+
+        /* 3.7 Mobile Usage Violations */
+        const muResp = await fetch('/api/mobile_violations');
+        const muViolations = await muResp.json();
+        const muContainer = document.getElementById('mobile-violations-list');
+        const muBanner    = document.getElementById('mobile-alert-banner');
+
+        if (muViolations.length > 0) {
+            muBanner.style.display = 'flex';
+            document.getElementById('mobile-alert-desc').innerText = 
+                `Driver using mobile phone on Camera: ${muViolations[0].camera_name}`;
+            muContainer.innerHTML = muViolations.map(v => `
+                <div class="mu-violation-item">
+                    <img src="/${v.image_path}" alt="Mobile Usage Violation">
+                    <div class="alert-info">
+                        <h4>${v.camera_name} <span class="ppe-badge-red" style="background:#fffbeb;color:#b45309;">Using Phone</span></h4>
+                        <span>${(v.vehicle_type||'').toUpperCase()} | ${v.time}</span>
+                    </div>
+                </div>`).join('');
+        } else {
+            muBanner.style.display = 'none';
+            muContainer.innerHTML = 
+                '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent mobile violations</p>';
+        }
+
+        /* 3.8 Mobile Walking Violations */
+        const muwResp = await fetch('/api/mobile_walking_violations');
+        const muwViolations = await muwResp.json();
+        const muwContainer = document.getElementById('muw-violations-list');
+        const muwBanner    = document.getElementById('muw-alert-banner');
+
+        if (muwViolations.length > 0) {
+            muwBanner.style.display = 'flex';
+            document.getElementById('muw-alert-desc').innerText = 
+                `Unsafe mobile usage detected on Camera: ${muwViolations[0].camera_name}`;
+            muwContainer.innerHTML = muwViolations.map(v => `
+                <div class="muw-violation-item">
+                    <img src="/${v.image_path}" alt="Walking Mobile Violation">
+                    <div class="alert-info">
+                        <h4>${v.camera_name} <span class="ppe-badge-red" style="background:#fffbeb;color:#92400e;">Talking</span></h4>
+                        <span>${v.time} | ${v.date}</span>
+                    </div>
+                </div>`).join('');
+        } else {
+            muwBanner.style.display = 'none';
+            muwContainer.innerHTML = 
+                '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent walking violations</p>';
+        }
+
+        /* 3.9 Restricted Zone Violations */
+        const resResp = await fetch('/api/restricted_violations');
+        const resViolations = await resResp.json();
+        const resContainer = document.getElementById('restricted-violations-list');
+        const resBanner    = document.getElementById('restricted-alert-banner');
+
+        if (resViolations.length > 0) {
+            resBanner.style.display = 'flex';
+            document.getElementById('restricted-alert-desc').innerText = 
+                resViolations[0].violation_type;
+            resContainer.innerHTML = resViolations.map(v => `
+                <div class="res-violation-item">
+                    <img src="/${v.image_path}" alt="Restricted Violation">
+                    <div class="alert-info">
+                        <h4>${v.camera_name} <span class="ppe-badge-red" style="background:#fef2f2;color:#450a0a;">Zone Breach</span></h4>
+                        <span>${v.time} | ${v.date}</span>
+                    </div>
+                </div>`).join('');
+        } else {
+            resBanner.style.display = 'none';
+            resContainer.innerHTML = 
+                '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent zone breaches</p>';
         }
 
         /* 4. System logs */

@@ -60,6 +60,10 @@ class SurveillanceDetector:
         self.mobile_detector = MobileDetector()
         self._mobile_violations_cache = {} # track_id -> bool
         self._mobile_walking_violations_cache = {} # track_id -> bool
+        self._restricted_violations_cache = {} # track_id -> bool
+
+        # ── Change 6: Restricted Zones ──────────────────────────────────
+        self.restricted_zones = self._load_restricted_zones()
         self.target_classes = {
             0: 'person',
             1: 'bicycle',
@@ -78,7 +82,7 @@ class SurveillanceDetector:
         self.log_file   = os.path.join(self.base_dir, 'logs', 'detections.log')
         self.system_log = os.path.join(self.base_dir, 'logs', 'system.log')
 
-        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt', 'images/mobile_usage', 'images/mobile_walking']:
+        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt', 'images/mobile_usage', 'images/mobile_walking', 'images/restricted']:
             full_path = os.path.join(self.base_dir, path)
             if not os.path.exists(full_path):
                 os.makedirs(full_path)
@@ -108,6 +112,21 @@ class SurveillanceDetector:
             cv2.imwrite(filepath, frame)
 
         return rel_path
+
+    def _load_restricted_zones(self):
+        """Load restricted zones from JSON config."""
+        path = os.path.join(self.base_dir, 'config', 'restricted_zones.json')
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                return json.load(f)
+        return {}
+
+    def _is_in_zone(self, point, polygon, frame_shape):
+        """Check if a normalized point is inside a pixel-coordinate polygon."""
+        h, w = frame_shape[:2]
+        pixel_poly = np.array([[int(p[0]*w), int(p[1]*h)] for p in polygon], np.int32)
+        dist = cv2.pointPolygonTest(pixel_poly, (int(point[0]), int(point[1])), False)
+        return dist >= 0
 
     # ─────────────────────────────────────────────────────────────────────
     def process_frame(self, frame, camera_name: str = None):
@@ -285,6 +304,28 @@ class SurveillanceDetector:
                                 f"WALKING VIOLATION: Person talking on phone at {camera_name}"
                             )
 
+                # ── Restricted Zone Detection ─────────────────────────────
+                zones = self.restricted_zones.get(camera_name, [])
+                # Use bottom-center of bounding box (feet position)
+                feet_pos = [(x1_p + x2_p) / 2, y2_p]
+                
+                for zone in zones:
+                    if self._is_in_zone(feet_pos, zone['polygon'], frame.shape):
+                        if tid not in self._restricted_violations_cache:
+                            violation_img = self.save_image(
+                                frame, f"restricted_entry", "restricted",
+                                x1_p, y1_p, x2_p, y2_p
+                            )
+                            self.db.insert_restricted_zone_violation(
+                                violation_type=f"Restricted Pathway Entry ({zone['name']})",
+                                image_path=violation_img,
+                                camera_name=camera_name
+                            )
+                            self._restricted_violations_cache[tid] = True
+                            self.log_system_event(
+                                f"ZONE VIOLATION: Restricted entry in {zone['name']} at {camera_name}"
+                            )
+
             # ── Seatbelt Detection (4-wheelers) ───────────────────────
             if obj_type in ['car', 'bus', 'truck']:
                 if crop.size > 0:
@@ -428,6 +469,16 @@ class SurveillanceDetector:
                         cv2.putText(frame, "UNSAFE: MOBILE TALKING",
                                     (int(ltrb_p[0]), int(ltrb_p[3]) + 40),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+            # ── Restricted Zone Boundaries ────────────────────────
+            zones = self.restricted_zones.get(camera_name, [])
+            for zone in zones:
+                h, w = frame.shape[:2]
+                pixel_poly = np.array([[int(p[0]*w), int(p[1]*h)] for p in zone['polygon']], np.int32)
+                cv2.polylines(frame, [pixel_poly], True, (0, 0, 255), 2)
+                cv2.putText(frame, f"RESTRICTED: {zone['name']}",
+                            (pixel_poly[0][0], pixel_poly[0][1] - 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
 
             # ── Seatbelt Visual Indicator ─────────────────────────
             if obj_type in ['car', 'bus', 'truck']:
