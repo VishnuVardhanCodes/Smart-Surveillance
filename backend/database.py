@@ -66,6 +66,21 @@ class DatabaseManager:
         ''')
 
         conn.commit()
+
+        # ── Mobile Usage table ───────────────────────────────────────────
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS mobile_usage (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                date           TEXT    NOT NULL,
+                time           TEXT    NOT NULL,
+                camera_name    TEXT    NOT NULL,
+                vehicle_type   TEXT    NOT NULL,
+                violation_type TEXT    NOT NULL,
+                image_path     TEXT    NOT NULL
+            )
+        ''')
+
+        conn.commit()
         conn.close()
 
     # ─────────────────────────────────────────────────────────────────────
@@ -211,6 +226,38 @@ class DatabaseManager:
         cursor = conn.cursor()
         cursor.execute(
             'SELECT * FROM seatbelt_violations ORDER BY id DESC LIMIT ?', (limit,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
+    # ─────────────────────────────────────────────────────────────────────
+    def insert_mobile_usage_violation(self, vehicle_type, violation_type, image_path,
+                                      camera_name='Main'):
+        """Persist one mobile usage violation event."""
+        now      = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%H:%M:%S")
+
+        conn   = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO mobile_usage
+                (date, time, camera_name, vehicle_type, violation_type, image_path)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (date_str, time_str, camera_name, vehicle_type,
+              violation_type, image_path))
+        conn.commit()
+        conn.close()
+        return True
+
+    # ─────────────────────────────────────────────────────────────────────
+    def get_recent_mobile_usage_violations(self, limit=10):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT * FROM mobile_usage ORDER BY id DESC LIMIT ?', (limit,)
         )
         rows = cursor.fetchall()
         conn.close()
@@ -367,6 +414,12 @@ class DatabaseManager:
         )
         seatbelt_violations = cursor.fetchone()[0]
 
+        cursor.execute(
+            "SELECT COUNT(*) FROM mobile_usage WHERE date=?",
+            (datetime.now().strftime("%Y-%m-%d"),)
+        )
+        mobile_violations = cursor.fetchone()[0]
+
         conn.close()
         return {
             'entries':           entries,
@@ -375,6 +428,7 @@ class DatabaseManager:
             'night_alerts':      night_alerts,
             'helmet_violations': helmet_violations,
             'seatbelt_violations': seatbelt_violations,
+            'mobile_violations': mobile_violations,
         }
 
     # ─────────────────────────────────────────────────────────────────────

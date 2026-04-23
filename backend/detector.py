@@ -12,6 +12,7 @@ from speed_estimator import SpeedEstimator
 from gender_classifier import GenderClassifier
 from helmet_detector import HelmetDetector
 from seatbelt_detector import SeatbeltDetector
+from mobile_detector import MobileDetector
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +55,10 @@ class SurveillanceDetector:
         # ── Change 4: Seatbelt Detector ──────────────────────────────────
         self.seatbelt_detector = SeatbeltDetector()
         self._seatbelt_violations_cache = {} # track_id -> bool
+
+        # ── Change 5: Mobile Usage Detector ──────────────────────────────
+        self.mobile_detector = MobileDetector()
+        self._mobile_violations_cache = {} # track_id -> bool
         self.target_classes = {
             0: 'person',
             1: 'bicycle',
@@ -72,7 +77,7 @@ class SurveillanceDetector:
         self.log_file   = os.path.join(self.base_dir, 'logs', 'detections.log')
         self.system_log = os.path.join(self.base_dir, 'logs', 'system.log')
 
-        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt']:
+        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt', 'images/mobile_usage']:
             full_path = os.path.join(self.base_dir, path)
             if not os.path.exists(full_path):
                 os.makedirs(full_path)
@@ -282,6 +287,28 @@ class SurveillanceDetector:
                                 f"SEATBELT VIOLATION: No seatbelt detected on {obj_type} at {camera_name}"
                             )
 
+            # ── Mobile Usage Detection (4-wheelers) ───────────────────
+            if obj_type in ['car', 'bus', 'truck']:
+                if crop.size > 0:
+                    is_using_phone, mu_score, mu_dets = self.mobile_detector.detect(crop)
+                    
+                    if is_using_phone:
+                        if tid not in self._mobile_violations_cache:
+                            violation_img = self.save_image(
+                                frame, f"mobile_usage_violation", "mobile_usage",
+                                x1, y1, x2, y2
+                            )
+                            self.db.insert_mobile_usage_violation(
+                                vehicle_type=obj_type,
+                                violation_type="Mobile Usage While Driving",
+                                image_path=violation_img,
+                                camera_name=camera_name
+                            )
+                            self._mobile_violations_cache[tid] = True
+                            self.log_system_event(
+                                f"MOBILE USAGE VIOLATION: Driver using phone on {obj_type} at {camera_name}"
+                            )
+
             self.log_system_event(
                 f"EVENT: {obj_type} ({event_type}) at {camera_name}"
                 + (f" | {speed_kmh:.1f} km/h" if speed_kmh else "")
@@ -396,6 +423,21 @@ class SurveillanceDetector:
                     cv2.putText(frame, sb_label,
                                 (int(ltrb_v[0]), int(ltrb_v[3]) + 20),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, sb_color, 2)
+
+            # ── Mobile Usage Visual Indicator ─────────────────────
+            if obj_type in ['car', 'bus', 'truck']:
+                ltrb_m = track.to_ltrb()
+                crop_m = frame[max(0, int(ltrb_m[1])):min(frame.shape[0], int(ltrb_m[3])),
+                               max(0, int(ltrb_m[0])):min(frame.shape[1], int(ltrb_m[2]))]
+                
+                if crop_m.size > 0:
+                    using_p, _, _ = self.mobile_detector.detect(crop_m)
+                    if using_p:
+                        mu_label = "MOBILE: USING PHONE"
+                        mu_color = (0, 0, 255)
+                        cv2.putText(frame, mu_label,
+                                    (int(ltrb_m[0]), int(ltrb_m[3]) + 40),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, mu_color, 2)
 
             cv2.putText(
                 frame, label,

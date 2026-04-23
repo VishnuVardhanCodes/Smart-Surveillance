@@ -193,6 +193,12 @@ def seatbelt_violations():
     return jsonify([dict(row) for row in violations])
 
 
+@app.route('/api/mobile_violations')
+def mobile_violations():
+    violations = db.get_recent_mobile_usage_violations(5)
+    return jsonify([dict(row) for row in violations])
+
+
 @app.route('/api/stats')
 def get_global_stats():
     stats = db.get_global_stats()
