@@ -39,16 +39,16 @@ class DatabaseManager:
             )
         ''')
 
-        # ── Night Alerts table ───────────────────────────────────────────
+        # ── PPE Violations table ─────────────────────────────────────────
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS night_alerts (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                date        TEXT    NOT NULL,
-                time        TEXT    NOT NULL,
-                object_type TEXT    NOT NULL,
-                plate_number TEXT,
-                image_path  TEXT    NOT NULL,
-                camera_name TEXT    NOT NULL
+            CREATE TABLE IF NOT EXISTS ppe_violations (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                date           TEXT    NOT NULL,
+                time           TEXT    NOT NULL,
+                camera_name    TEXT    NOT NULL,
+                object_type    TEXT    NOT NULL,
+                violation_type TEXT    NOT NULL,
+                image_path     TEXT    NOT NULL
             )
         ''')
 
@@ -266,12 +266,19 @@ class DatabaseManager:
         cursor.execute("SELECT COUNT(*) FROM night_alerts")
         night_alerts = cursor.fetchone()[0]
 
+        cursor.execute(
+            "SELECT COUNT(*) FROM ppe_violations WHERE date=?",
+            (datetime.now().strftime("%Y-%m-%d"),)
+        )
+        helmet_violations = cursor.fetchone()[0]
+
         conn.close()
         return {
-            'entries':      entries,
-            'exits':        exits,
-            'vehicles':     vehicles,
-            'night_alerts': night_alerts,
+            'entries':           entries,
+            'exits':             exits,
+            'vehicles':          vehicles,
+            'night_alerts':      night_alerts,
+            'helmet_violations': helmet_violations,
         }
 
     # ─────────────────────────────────────────────────────────────────────
