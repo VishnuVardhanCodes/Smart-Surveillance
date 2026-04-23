@@ -61,6 +61,8 @@ class SurveillanceDetector:
         self._mobile_violations_cache = {} # track_id -> bool
         self._mobile_walking_violations_cache = {} # track_id -> bool
         self._restricted_violations_cache = {} # track_id -> bool
+        self._sleep_tracking = {} # tid -> start_time
+        self._sleep_violations_cache = {} # tid -> bool
 
         # ── Change 6: Restricted Zones ──────────────────────────────────
         self.restricted_zones = self._load_restricted_zones()
@@ -82,7 +84,7 @@ class SurveillanceDetector:
         self.log_file   = os.path.join(self.base_dir, 'logs', 'detections.log')
         self.system_log = os.path.join(self.base_dir, 'logs', 'system.log')
 
-        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt', 'images/mobile_usage', 'images/mobile_walking', 'images/restricted']:
+        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt', 'images/mobile_usage', 'images/mobile_walking', 'images/restricted', 'images/sleep']:
             full_path = os.path.join(self.base_dir, path)
             if not os.path.exists(full_path):
                 os.makedirs(full_path)
@@ -326,6 +328,35 @@ class SurveillanceDetector:
                                 f"ZONE VIOLATION: Restricted entry in {zone['name']} at {camera_name}"
                             )
 
+                # ── Sleeping Detection ────────────────────────────────────
+                # Horizontal orientation: width > height * 1.2 (heuristic)
+                is_horizontal = (x2_p - x1_p) > (y2_p - y1_p) * 1.1
+                
+                if is_horizontal:
+                    if tid not in self._sleep_tracking:
+                        self._sleep_tracking[tid] = time.time()
+                    else:
+                        duration = time.time() - self._sleep_tracking[tid]
+                        if duration > 120: # 2 minutes
+                            if tid not in self._sleep_violations_cache:
+                                violation_img = self.save_image(
+                                    frame, f"sleeping_on_duty", "sleep",
+                                    x1_p, y1_p, x2_p, y2_p
+                                )
+                                self.db.insert_sleep_violation(
+                                    violation_type="Sleeping On Duty Alert",
+                                    image_path=violation_img,
+                                    camera_name=camera_name
+                                )
+                                self._sleep_violations_cache[tid] = True
+                                self.log_system_event(
+                                    f"SLEEPING VIOLATION: Person detected sleeping at {camera_name}"
+                                )
+                else:
+                    # Reset if they stand up
+                    if tid in self._sleep_tracking:
+                        del self._sleep_tracking[tid]
+
             # ── Seatbelt Detection (4-wheelers) ───────────────────────
             if obj_type in ['car', 'bus', 'truck']:
                 if crop.size > 0:
@@ -479,6 +510,17 @@ class SurveillanceDetector:
                 cv2.putText(frame, f"RESTRICTED: {zone['name']}",
                             (pixel_poly[0][0], pixel_poly[0][1] - 5),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
+
+            # ── Sleeping Visual Indicator ─────────────────────────
+            if obj_type == 'person':
+                if tid in self._sleep_tracking:
+                    duration = time.time() - self._sleep_tracking[tid]
+                    if duration > 10: # show status after 10s of lying down
+                        color = (0, 0, 255) if duration > 120 else (0, 165, 255)
+                        label = "SLEEPING!!" if duration > 120 else f"LYING DOWN: {int(duration)}s"
+                        cv2.putText(frame, label,
+                                    (int(ltrb[0]), int(ltrb[1]) - 30),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
             # ── Seatbelt Visual Indicator ─────────────────────────
             if obj_type in ['car', 'bus', 'truck']:

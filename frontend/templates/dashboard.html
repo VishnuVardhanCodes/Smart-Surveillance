@@ -384,6 +384,15 @@
                 <p id="restricted-alert-desc">Restricted area entry detected on Camera: Gate</p>
             </div>
         </div>
+
+        <!-- Sleeping Detection Banner -->
+        <div id="sleep-alert-banner" class="sleep-alert-banner">
+            <i class="fas fa-bed fa-2x"></i>
+            <div>
+                <strong>⚠ SLEEPING ON DUTY — Personnel Inactivity Detected</strong>
+                <p id="sleep-alert-desc">Sleep detection alert on Camera: Room</p>
+            </div>
+        </div>
             <h1>Command Center</h1>
             <p>Real-time AI monitoring &amp; Multi-camera stream</p>
         </header>
@@ -433,7 +442,12 @@
             <div class="stat-card" style="border-color: #450a0a; background: #fef2f2;">
                 <div class="stat-icon" style="background: #450a0a;"><i class="fas fa-door-open"></i></div>
                 <div class="stat-value" id="global-restricted" style="color: #450a0a;">0</div>
-                <div class="stat-label">Restricted Zone Breaches</div>
+                <div class="stat-label">Restricted Breaches</div>
+            </div>
+            <div class="stat-card" style="border-color: #1e1b4b; background: #eef2ff;">
+                <div class="stat-icon" style="background: #1e1b4b;"><i class="fas fa-bed"></i></div>
+                <div class="stat-value" id="global-sleep" style="color: #1e1b4b;">0</div>
+                <div class="stat-label">Sleep Alerts</div>
             </div>
         </div>
 
@@ -600,6 +614,14 @@
                 </div>
                 <div id="restricted-violations-list" class="alert-list"></div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-bed"></i> Sleeping Detection</h3>
+                    <a href="/history" style="font-size:0.8rem;">View All</a>
+                </div>
+                <div id="sleep-violations-list" class="alert-list"></div>
+            </div>
         </div>
 
     </main>
@@ -727,6 +749,7 @@ async function updateData() {
         document.getElementById('global-mobile').innerText   = stats.mobile_violations || 0;
         document.getElementById('global-walking-mobile').innerText = stats.mobile_walking_violations || 0;
         document.getElementById('global-restricted').innerText     = stats.restricted_violations || 0;
+        document.getElementById('global-sleep').innerText          = stats.sleep_violations || 0;
 
         /* 3. Night alerts */
         const alertResp = await fetch('/api/night_alerts');
@@ -870,6 +893,30 @@ async function updateData() {
             resBanner.style.display = 'none';
             resContainer.innerHTML = 
                 '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent zone breaches</p>';
+        }
+
+        /* 3.10 Sleeping Violations */
+        const sleepResp = await fetch('/api/sleep_violations');
+        const sleepViolations = await sleepResp.json();
+        const sleepContainer = document.getElementById('sleep-violations-list');
+        const sleepBanner    = document.getElementById('sleep-alert-banner');
+
+        if (sleepViolations.length > 0) {
+            sleepBanner.style.display = 'flex';
+            document.getElementById('sleep-alert-desc').innerText = 
+                `Personnel detected sleeping on Camera: ${sleepViolations[0].camera_name}`;
+            sleepContainer.innerHTML = sleepViolations.map(v => `
+                <div class="sleep-violation-item">
+                    <img src="/${v.image_path}" alt="Sleep Violation">
+                    <div class="alert-info">
+                        <h4>${v.camera_name} <span class="ppe-badge-red" style="background:#eef2ff;color:#1e1b4b;">Sleeping</span></h4>
+                        <span>${v.time} | ${v.date}</span>
+                    </div>
+                </div>`).join('');
+        } else {
+            sleepBanner.style.display = 'none';
+            sleepContainer.innerHTML = 
+                '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No sleep alerts</p>';
         }
 
         /* 4. System logs */

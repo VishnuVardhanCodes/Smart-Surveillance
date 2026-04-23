@@ -109,6 +109,20 @@ class DatabaseManager:
         ''')
 
         conn.commit()
+
+        # ── Sleeping Detection table ─────────────────────────────────────
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sleep_detection_logs (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                date           TEXT    NOT NULL,
+                time           TEXT    NOT NULL,
+                camera_name    TEXT    NOT NULL,
+                violation_type TEXT    NOT NULL,
+                image_path     TEXT    NOT NULL
+            )
+        ''')
+
+        conn.commit()
         conn.close()
 
     # ─────────────────────────────────────────────────────────────────────

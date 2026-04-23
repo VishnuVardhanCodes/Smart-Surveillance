@@ -211,6 +211,12 @@ def restricted_violations():
     return jsonify([dict(row) for row in violations])
 
 
+@app.route('/api/sleep_violations')
+def sleep_violations():
+    violations = db.get_recent_sleep_violations(5)
+    return jsonify([dict(row) for row in violations])
+
+
 @app.route('/api/stats')
 def get_global_stats():
     stats = db.get_global_stats()
