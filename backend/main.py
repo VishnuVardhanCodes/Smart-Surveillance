@@ -181,6 +181,12 @@ def night_alerts():
     return jsonify([dict(row) for row in alerts])
 
 
+@app.route('/api/ppe_violations')
+def ppe_violations():
+    violations = db.get_recent_ppe_violations(5)
+    return jsonify([dict(row) for row in violations])
+
+
 @app.route('/api/stats')
 def get_global_stats():
     stats = db.get_global_stats()

@@ -128,6 +128,50 @@ class DatabaseManager:
         return True
 
     # ─────────────────────────────────────────────────────────────────────
+    def insert_ppe_violation(self, object_type, violation_type, image_path,
+                             camera_name='Main'):
+        """Persist one PPE violation event."""
+        now      = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%H:%M:%S")
+
+        conn   = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO ppe_violations
+                (date, time, camera_name, object_type, violation_type, image_path)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (date_str, time_str, camera_name, object_type,
+              violation_type, image_path))
+        conn.commit()
+        conn.close()
+        return True
+
+    # ─────────────────────────────────────────────────────────────────────
+    def get_recent_ppe_violations(self, limit=10):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT * FROM ppe_violations ORDER BY id DESC LIMIT ?', (limit,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
+    # ─────────────────────────────────────────────────────────────────────
+    def get_ppe_stats_today(self):
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT COUNT(*) FROM ppe_violations WHERE date=?", (date_str,)
+        )
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count
+
+    # ─────────────────────────────────────────────────────────────────────
     def get_all_detections(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row

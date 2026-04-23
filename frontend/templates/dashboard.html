@@ -150,7 +150,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 4px 0;
+    padding: 4px 0;
             border-bottom: 1px solid rgba(0,0,0,0.04);
             font-size: 0.75rem;
         }
@@ -340,6 +340,15 @@
                    preload="auto"></audio>
         </div>
 
+        <!-- PPE Violation Banner -->
+        <div id="ppe-alert-banner" class="ppe-alert-banner">
+            <i class="fas fa-hard-hat fa-2x"></i>
+            <div>
+                <strong>⚠ PPE Violation Detected — No Helmet</strong>
+                <p id="ppe-alert-desc">Worker without helmet detected on Camera: Room</p>
+            </div>
+        </div>
+
         <header>
             <h1>Command Center</h1>
             <p>Real-time AI monitoring &amp; Multi-camera stream</p>
@@ -366,6 +375,11 @@
                 <div class="stat-icon"><i class="fas fa-car"></i></div>
                 <div class="stat-value" id="global-vehicles">0</div>
                 <div class="stat-label">Vehicles Detected</div>
+            </div>
+            <div class="stat-card" style="border-color: #ef4444; background: #fff5f5;">
+                <div class="stat-icon" style="background: #ef4444;"><i class="fas fa-user-slash"></i></div>
+                <div class="stat-value" id="global-ppe" style="color: #991b1b;">0</div>
+                <div class="stat-label">Helmet Violations Today</div>
             </div>
         </div>
 
@@ -492,6 +506,14 @@
                 </div>
                 <div id="night-alerts-list" class="alert-list"></div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-hard-hat"></i> PPE Violations</h3>
+                    <a href="/history" style="font-size:0.8rem;">View All</a>
+                </div>
+                <div id="ppe-violations-list" class="alert-list"></div>
+            </div>
         </div>
 
     </main>
@@ -614,6 +636,7 @@ async function updateData() {
         document.getElementById('global-out').innerText      = stats.exits;
         document.getElementById('global-vehicles').innerText = stats.vehicles;
         document.getElementById('global-night').innerText    = stats.night_alerts;
+        document.getElementById('global-ppe').innerText      = stats.helmet_violations || 0;
 
         /* 3. Night alerts */
         const alertResp = await fetch('/api/night_alerts');
@@ -637,6 +660,30 @@ async function updateData() {
             banner.style.display = 'none';
             alertContainer.innerHTML =
                 '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent night alerts</p>';
+        }
+
+        /* 3.5 PPE Violations */
+        const ppeResp = await fetch('/api/ppe_violations');
+        const ppeViolations = await ppeResp.json();
+        const ppeContainer = document.getElementById('ppe-violations-list');
+        const ppeBanner    = document.getElementById('ppe-alert-banner');
+
+        if (ppeViolations.length > 0) {
+            ppeBanner.style.display = 'flex';
+            document.getElementById('ppe-alert-desc').innerText = 
+                `Worker without helmet detected on Camera: ${ppeViolations[0].camera_name}`;
+            ppeContainer.innerHTML = ppeViolations.map(v => `
+                <div class="ppe-violation-item">
+                    <img src="/${v.image_path}" alt="PPE Violation">
+                    <div class="alert-info">
+                        <h4>${v.camera_name} <span class="ppe-badge-red">No Helmet</span></h4>
+                        <span>${v.time} | ${v.date}</span>
+                    </div>
+                </div>`).join('');
+        } else {
+            ppeBanner.style.display = 'none';
+            ppeContainer.innerHTML = 
+                '<p style="text-align:center;color:var(--text-muted);padding:1rem;">No recent PPE violations</p>';
         }
 
         /* 4. System logs */

@@ -10,6 +10,7 @@ from database import DatabaseManager
 from night_detector import NightDetector
 from speed_estimator import SpeedEstimator
 from gender_classifier import GenderClassifier
+from helmet_detector import HelmetDetector
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -45,7 +46,9 @@ class SurveillanceDetector:
         self.male_count   = 0
         self.female_count = 0
 
-        # Which YOLO classes we care about
+        # ── Change 3: Helmet Detector (PPE Compliance) ────────────────────
+        self.helmet_detector = HelmetDetector()
+        self._ppe_violations_cache = {}  # track_id -> bool (has_violated)
         self.target_classes = {
             0: 'person',
             1: 'bicycle',
@@ -64,7 +67,7 @@ class SurveillanceDetector:
         self.log_file   = os.path.join(self.base_dir, 'logs', 'detections.log')
         self.system_log = os.path.join(self.base_dir, 'logs', 'system.log')
 
-        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates']:
+        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe']:
             full_path = os.path.join(self.base_dir, path)
             if not os.path.exists(full_path):
                 os.makedirs(full_path)
@@ -229,6 +232,29 @@ class SurveillanceDetector:
                 gender       = gender,
                 plate_img_path = plate_img_path,
             )
+            # ── PPE / Helmet Detection ────────────────────────────────
+            if obj_type == 'person':
+                if crop.size > 0:
+                    has_helmet, ppe_score, ppe_dets = self.helmet_detector.detect(crop)
+                    
+                    if has_helmet is False: # Violation
+                        # Only record violation once per track to avoid spamming
+                        if tid not in self._ppe_violations_cache:
+                            violation_img = self.save_image(
+                                frame, f"ppe_no_helmet", "ppe",
+                                x1, y1, x2, y2
+                            )
+                            self.db.insert_ppe_violation(
+                                object_type="person",
+                                violation_type="No Helmet",
+                                image_path=violation_img,
+                                camera_name=camera_name
+                            )
+                            self._ppe_violations_cache[tid] = True
+                            self.log_system_event(
+                                f"PPE VIOLATION: No Helmet detected at {camera_name}"
+                            )
+
             self.log_system_event(
                 f"EVENT: {obj_type} ({event_type}) at {camera_name}"
                 + (f" | {speed_kmh:.1f} km/h" if speed_kmh else "")
@@ -299,6 +325,28 @@ class SurveillanceDetector:
 
                 cv2.rectangle(frame, (int(ltrb[0]), int(ltrb[1])), 
                               (int(ltrb[2]), int(ltrb[3])), color, 2)
+
+            # ── PPE Visual Indicator ──────────────────────────────
+            if obj_type == 'person':
+                ltrb_p = track.to_ltrb()
+                crop_p = frame[max(0, int(ltrb_p[1])):min(frame.shape[0], int(ltrb_p[3])),
+                               max(0, int(ltrb_p[0])):min(frame.shape[1], int(ltrb_p[2]))]
+                
+                if crop_p.size > 0:
+                    has_h, _, _ = self.helmet_detector.detect(crop_p)
+                    if has_h is True:
+                        ppe_label = "SAFE (Helmet)"
+                        ppe_color = (0, 255, 0)
+                    elif has_h is False:
+                        ppe_label = "ALERT (No Helmet)"
+                        ppe_color = (0, 0, 255)
+                    else:
+                        ppe_label = "PPE: Checking..."
+                        ppe_color = (255, 255, 255)
+                    
+                    cv2.putText(frame, ppe_label,
+                                (int(ltrb_p[0]), int(ltrb_p[3]) + 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, ppe_color, 2)
 
             cv2.putText(
                 frame, label,
