@@ -59,6 +59,7 @@ class SurveillanceDetector:
         # ── Change 5: Mobile Usage Detector ──────────────────────────────
         self.mobile_detector = MobileDetector()
         self._mobile_violations_cache = {} # track_id -> bool
+        self._mobile_walking_violations_cache = {} # track_id -> bool
         self.target_classes = {
             0: 'person',
             1: 'bicycle',
@@ -77,7 +78,7 @@ class SurveillanceDetector:
         self.log_file   = os.path.join(self.base_dir, 'logs', 'detections.log')
         self.system_log = os.path.join(self.base_dir, 'logs', 'system.log')
 
-        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt', 'images/mobile_usage']:
+        for path in ['logs', 'images/persons', 'images/vehicles', 'images/plates', 'images/ppe', 'images/seatbelt', 'images/mobile_usage', 'images/mobile_walking']:
             full_path = os.path.join(self.base_dir, path)
             if not os.path.exists(full_path):
                 os.makedirs(full_path)
@@ -265,6 +266,25 @@ class SurveillanceDetector:
                                 f"PPE VIOLATION: No Helmet detected at {camera_name}"
                             )
 
+                # ── Mobile Talking While Walking ──────────────────────────
+                if crop_p.size > 0:
+                    is_talking, muw_score, muw_dets = self.mobile_detector.detect_talking(crop_p)
+                    if is_talking:
+                        if tid not in self._mobile_walking_violations_cache:
+                            violation_img = self.save_image(
+                                frame, f"mobile_walking_violation", "mobile_walking",
+                                x1_p, y1_p, x2_p, y2_p
+                            )
+                            self.db.insert_mobile_walking_violation(
+                                violation_type="Unsafe Mobile Usage While Walking",
+                                image_path=violation_img,
+                                camera_name=camera_name
+                            )
+                            self._mobile_walking_violations_cache[tid] = True
+                            self.log_system_event(
+                                f"WALKING VIOLATION: Person talking on phone at {camera_name}"
+                            )
+
             # ── Seatbelt Detection (4-wheelers) ───────────────────────
             if obj_type in ['car', 'bus', 'truck']:
                 if crop.size > 0:
@@ -401,6 +421,13 @@ class SurveillanceDetector:
                     cv2.putText(frame, ppe_label,
                                 (int(ltrb_p[0]), int(ltrb_p[3]) + 20),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, ppe_color, 2)
+
+                    # ── Mobile Walking Visual Indicator ───────────────
+                    is_t, _, _ = self.mobile_detector.detect_talking(crop_p)
+                    if is_t:
+                        cv2.putText(frame, "UNSAFE: MOBILE TALKING",
+                                    (int(ltrb_p[0]), int(ltrb_p[3]) + 40),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
             # ── Seatbelt Visual Indicator ─────────────────────────
             if obj_type in ['car', 'bus', 'truck']:

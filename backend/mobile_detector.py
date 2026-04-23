@@ -55,3 +55,26 @@ class MobileDetector:
             return True, results.boxes.conf.max().item() if len(results.boxes.conf) > 0 else 0.0, detections
             
         return False, 0.0, detections
+
+    def detect_talking(self, person_crop):
+        """
+        Specific logic for detecting talking while walking.
+        Checks if phone is in the upper 40% of the person's crop (near face).
+        """
+        is_using, score, detections = self.detect(person_crop)
+        if not is_using:
+            return False, 0.0, []
+
+        near_face = False
+        h, w = person_crop.shape[:2]
+        
+        for d in detections:
+            if 'phone' in d['label'] or 'cell' in d['label']:
+                # Box is [x1, y1, x2, y2]
+                y1 = d['box'][1]
+                # If phone is in upper 40% of person's height
+                if y1 < (h * 0.4):
+                    near_face = True
+                    break
+        
+        return near_face, score, detections

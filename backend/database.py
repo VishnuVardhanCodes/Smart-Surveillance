@@ -81,6 +81,20 @@ class DatabaseManager:
         ''')
 
         conn.commit()
+
+        # ── Mobile Walking table ─────────────────────────────────────────
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS mobile_walking_logs (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                date           TEXT    NOT NULL,
+                time           TEXT    NOT NULL,
+                camera_name    TEXT    NOT NULL,
+                violation_type TEXT    NOT NULL,
+                image_path     TEXT    NOT NULL
+            )
+        ''')
+
+        conn.commit()
         conn.close()
 
     # ─────────────────────────────────────────────────────────────────────
@@ -264,6 +278,37 @@ class DatabaseManager:
         return rows
 
     # ─────────────────────────────────────────────────────────────────────
+    def insert_mobile_walking_violation(self, violation_type, image_path,
+                                        camera_name='Main'):
+        """Persist one pedestrian mobile usage violation event."""
+        now      = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%H:%M:%S")
+
+        conn   = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO mobile_walking_logs
+                (date, time, camera_name, violation_type, image_path)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (date_str, time_str, camera_name, violation_type, image_path))
+        conn.commit()
+        conn.close()
+        return True
+
+    # ─────────────────────────────────────────────────────────────────────
+    def get_recent_mobile_walking_violations(self, limit=10):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT * FROM mobile_walking_logs ORDER BY id DESC LIMIT ?', (limit,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
+    # ─────────────────────────────────────────────────────────────────────
     def get_all_detections(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -420,6 +465,12 @@ class DatabaseManager:
         )
         mobile_violations = cursor.fetchone()[0]
 
+        cursor.execute(
+            "SELECT COUNT(*) FROM mobile_walking_logs WHERE date=?",
+            (datetime.now().strftime("%Y-%m-%d"),)
+        )
+        mobile_walking_violations = cursor.fetchone()[0]
+
         conn.close()
         return {
             'entries':           entries,
@@ -429,6 +480,7 @@ class DatabaseManager:
             'helmet_violations': helmet_violations,
             'seatbelt_violations': seatbelt_violations,
             'mobile_violations': mobile_violations,
+            'mobile_walking_violations': mobile_walking_violations,
         }
 
     # ─────────────────────────────────────────────────────────────────────
