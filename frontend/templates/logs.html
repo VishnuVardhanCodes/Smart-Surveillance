@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+
+{% block title %}System Audit Logs | SmartSurveill{% endblock %}
+
+{% block extra_css %}
+<style>
+    .terminal-container {
+        background: #020617;
+        color: #10B981;
+        font-family: 'Courier New', Courier, monospace;
+        padding: 2rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        height: 70vh;
+        overflow-y: auto;
+        font-size: 0.9rem;
+        border: 1px solid #1E293B;
+    }
+    .log-line {
+        margin-bottom: 8px;
+        line-height: 1.4;
+        display: flex;
+        gap: 15px;
+    }
+    .log-time { color: #64748B; font-weight: 600; min-width: 160px; }
+    .log-msg { color: #F1F5F9; }
+    .log-type-error { color: #EF4444; }
+    .log-type-warn { color: #F59E0B; }
+    .log-type-system { color: #3B82F6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div>
+        <h1 style="font-size: 1.5rem; font-weight: 700;">System Audit Logs</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Real-time execution logs and AI event auditing.</p>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <button class="btn" onclick="clearLogs()" style="background:var(--danger); color:white; border:none; padding:10px 20px; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">
+            <i class="fas fa-trash-alt"></i> Clear Console
+        </button>
+    </div>
+</div>
+
+<div class="terminal-container" id="log-console">
+    <div class="log-line"><span class="log-time">[SYSTEM]</span> <span class="log-msg">Initializing SmartSurveill Sentinel...</span></div>
+    <div class="log-line"><span class="log-time">[SYSTEM]</span> <span class="log-msg">Connecting to YOLOv8 inference engine... OK</span></div>
+    <div class="log-line"><span class="log-time">[SYSTEM]</span> <span class="log-msg">Establishing database synchronization... OK</span></div>
+    <div id="log-entries"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function fetchSystemLogs() {
+        try {
+            const resp = await fetch('/api/logs');
+            const data = await resp.json();
+            const container = document.getElementById('log-entries');
+            
+            if (data.length > 0) {
+                container.innerHTML = data.map(log => {
+                    const parts = log.split('] ');
+                    const time = parts[0]?.replace('[', '') || '--:--';
+                    const msg = parts[1] || log;
+                    
+                    let typeClass = '';
+                    if (msg.includes('VIOLATION') || msg.includes('Alert')) typeClass = 'log-type-error';
+                    if (msg.includes('System')) typeClass = 'log-type-system';
+                    
+                    return `
+                        <div class="log-line">
+                            <span class="log-time">${time}</span>
+                            <span class="log-msg ${typeClass}">${msg}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (e) {}
+    }
+
+    function clearLogs() {
+        document.getElementById('log-entries').innerHTML = '<div class="log-line"><span class="log-time">[USER]</span> <span class="log-msg">Console cleared by admin.</span></div>';
+    }
+
+    setInterval(fetchSystemLogs, 5000);
+    fetchSystemLogs();
+</script>
+{% endblock %}

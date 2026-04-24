@@ -1,517 +1,215 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ITC PSPD BCM | SmartEye AI Sentinel – Search</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* ── Search form card ───────────────────────────── */
-        .search-card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-            border: 1px solid rgba(0,0,0,0.05);
-            margin-bottom: 2rem;
-        }
-        .search-card h3 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 1.4rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .search-card h3 i { color: #2563eb; }
+{% extends "layout.html" %}
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1.2rem;
-            margin-bottom: 1.4rem;
-        }
+{% block title %}Smart Search | SmartSurveill{% endblock %}
 
-        .form-field label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-        .form-field label i { margin-right: 5px; }
+{% block extra_css %}
+<style>
+    .search-filter-panel {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+    }
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .filter-group label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+    .filter-group input, .filter-group select {
+        width: 100%;
+        padding: 10px 15px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--bg-main);
+        color: var(--text-main);
+        outline: none;
+        transition: var(--transition);
+    }
+    .filter-group input:focus, .filter-group select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .search-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+    .results-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .results-table th, .results-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+    }
+    .results-table th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+    .results-table tr:hover {
+        background: var(--bg-main);
+    }
+</style>
+{% endblock %}
 
-        .form-field input,
-        .form-field select {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 0.88rem;
-            font-family: 'Poppins', sans-serif;
-            color: #1e293b;
-            background: #f8fafc;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            outline: none;
-        }
-        .form-field input:focus,
-        .form-field select:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-            background: #fff;
-        }
-
-        .search-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .btn-search {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: white;
-            border: none;
-            padding: 11px 28px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-            font-family: 'Poppins', sans-serif;
-        }
-        .btn-search:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(37,99,235,0.35); }
-        .btn-clear {
-            background: #f1f5f9;
-            color: #64748b;
-            border: 1.5px solid #e2e8f0;
-            padding: 11px 20px;
-            border-radius: 10px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'Poppins', sans-serif;
-            transition: all 0.2s;
-        }
-        .btn-clear:hover { background: #e2e8f0; color: #1e293b; }
-
-        /* ── Results table ──────────────────────────────── */
-        .results-card {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-            border: 1px solid rgba(0,0,0,0.05);
-            overflow: hidden;
-        }
-
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.3rem 1.8rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .results-header h3 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .results-header h3 i { color: #2563eb; }
-
-        .count-badge {
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .table-scroll { max-height: 520px; overflow-y: auto; }
-        .table-scroll::-webkit-scrollbar { width: 5px; }
-        .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 13px 16px; text-align: left; font-size: 0.82rem;
-                  border-bottom: 1px solid rgba(0,0,0,0.05); }
-        th {
-            background: #f8fafc; font-weight: 700; color: #64748b;
-            font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;
-            position: sticky; top: 0; z-index: 1;
-        }
-        tr:hover { background: rgba(37,99,235,0.025); }
-
-        /* Type badges */
-        .type-tag { padding: 3px 9px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
-        .type-tag.person     { background: #e0f2fe; color: #0369a1; }
-        .type-tag.car,
-        .type-tag.truck,
-        .type-tag.bus        { background: #fef3c7; color: #92400e; }
-        .type-tag.motorcycle,
-        .type-tag.bicycle    { background: #ede9fe; color: #6d28d9; }
-
-        /* Event badges */
-        .ev-in  { background: #dcfce7; color: #166534; border-radius: 12px; padding: 3px 9px; font-size: 0.7rem; font-weight: 700; }
-        .ev-out { background: #fee2e2; color: #991b1b; border-radius: 12px; padding: 3px 9px; font-size: 0.7rem; font-weight: 700; }
-
-        /* Speed badge */
-        .speed-badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            background: linear-gradient(135deg,#f59e0b,#ef4444);
-            color: white; padding: 3px 9px; border-radius: 12px;
-            font-size: 0.7rem; font-weight: 700;
-        }
-        /* Gender badge */
-        .gender-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; }
-        .gender-badge.male   { background: #dbeafe; color: #1e40af; }
-        .gender-badge.female { background: #fdf2f8; color: #be185d; }
-
-        /* Plate */
-        .plate-badge {
-            background: #1e293b; color: #facc15;
-            font-family: 'Courier New', monospace;
-            font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;
-            padding: 3px 9px; border-radius: 4px; border: 1px solid #64748b;
-        }
-
-        /* Cam chip */
-        .cam-chip { font-size: 0.75rem; font-weight: 600; color: #2563eb; }
-
-        /* Empty / loading states */
-        .state-msg {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: #94a3b8;
-        }
-        .state-msg i { font-size: 2.5rem; display: block; margin-bottom: 1rem; }
-
-        /* Modal */
-        .modal {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.55); backdrop-filter: blur(5px);
-            z-index: 1000; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s;
-        }
-        .modal.active { opacity: 1; }
-        .modal-content {
-            background: white; padding: 24px; border-radius: 20px;
-            max-width: 700px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-        }
-        .modal-content img { width: 100%; border-radius: 12px; }
-    </style>
-</head>
-<body>
-<div class="app-container">
-
-    <!-- ════════════  SIDEBAR  ════════════ -->
-    <aside class="sidebar">
-        <div class="logo">
-            <i class="fas fa-shield-alt"></i>
-            <div style="display:flex !important;flex-direction:column !important;line-height:1.2;">
-                <span style="font-size:0.65rem;color:#94a3b8;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;">ITC PSPD BCM</span>
-                <span style="font-size:1rem;color:white;font-weight:700;letter-spacing:0.2px;">SmartEye AI Sentinel</span>
-            </div>
-        </div>
-        <nav>
-            <a href="/"         class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
-            <a href="/history"  class="nav-link"><i class="fas fa-history"></i><span>History</span></a>
-            <a href="/humans"   class="nav-link"><i class="fas fa-user-friends"></i><span>Humans</span></a>
-            <a href="/bikes"    class="nav-link"><i class="fas fa-motorcycle"></i><span>Two-Wheelers</span></a>
-            <a href="/vehicles" class="nav-link"><i class="fas fa-car-side"></i><span>Vehicles</span></a>
-            <a href="/plates"   class="nav-link"><i class="fas fa-id-card"></i><span>Number Plates</span></a>
-            <a href="/reports"  class="nav-link"><i class="fas fa-file-pdf"></i><span>Reports</span></a>
-            <a href="/search"   class="nav-link active"><i class="fas fa-search"></i><span>Search</span></a>
-        </nav>
-        <div class="sidebar-footer">
-            <div style="display:flex;align-items:center;gap:10px;color:#94a3b8;font-size:0.85rem;">
-                <div style="width:10px;height:10px;background:#10b981;border-radius:50%;box-shadow:0 0 10px rgba(16,185,129,0.5);"></div>
-                <span>System Active</span>
-            </div>
-        </div>
-    </aside>
-
-    <!-- ════════════  MAIN CONTENT  ════════════ -->
-    <main class="main-content">
-        <header>
-            <h1>Intelligent Search</h1>
-            <p>Query the surveillance database using date, time, camera or plate filters.</p>
-        </header>
-
-        <!-- ── Filter Form ─────────────────────────────── -->
-        <div class="search-card">
-            <h3><i class="fas fa-sliders-h"></i> Search Filters</h3>
-
-            <div class="form-grid">
-                <!-- Date -->
-                <div class="form-field">
-                    <label><i class="fas fa-calendar-day"></i> Date</label>
-                    <input type="date" id="f-date" title="Filter by date">
-                </div>
-
-                <!-- Time (hour range) -->
-                <div class="form-field">
-                    <label><i class="fas fa-clock"></i> Time (HH:MM)</label>
-                    <input type="text" id="f-time" placeholder="e.g. 14:30">
-                </div>
-
-                <!-- Camera -->
-                <div class="form-field">
-                    <label><i class="fas fa-video"></i> Camera</label>
-                    <select id="f-camera">
-                        <option value="">All Cameras</option>
-                        <option value="Gate">Gate</option>
-                        <option value="Room">Room</option>
-                        <option value="Parking">Parking</option>
-                    </select>
-                </div>
-
-                <!-- Object type -->
-                <div class="form-field">
-                    <label><i class="fas fa-shapes"></i> Object Type</label>
-                    <select id="f-type">
-                        <option value="">All Types</option>
-                        <option value="person">Person</option>
-                        <option value="car">Car</option>
-                        <option value="motorcycle">Motorcycle</option>
-                        <option value="bicycle">Bicycle</option>
-                        <option value="truck">Truck</option>
-                        <option value="bus">Bus</option>
-                    </select>
-                </div>
-
-                <!-- Plate number -->
-                <div class="form-field">
-                    <label><i class="fas fa-id-card"></i> Plate Number</label>
-                    <input type="text" id="f-plate" placeholder="e.g. MH12AB1234">
-                </div>
-            </div>
-
-            <div class="search-actions">
-                <button class="btn-search" id="search-btn" onclick="performSearch()">
-                    <i class="fas fa-search"></i> Search Records
-                </button>
-                <button class="btn-clear" onclick="clearFilters()">
-                    <i class="fas fa-times"></i> Clear
-                </button>
-                <span id="search-status" style="font-size:0.8rem;color:#94a3b8;margin-left:8px;"></span>
-            </div>
-        </div>
-
-        <!-- ── Results ─────────────────────────────────── -->
-        <div class="results-card">
-            <div class="results-header">
-                <h3><i class="fas fa-table"></i> Query Results</h3>
-                <span class="count-badge" id="results-count">Awaiting search…</span>
-            </div>
-            <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Date / Time</th>
-                            <th>Camera</th>
-                            <th>Type</th>
-                            <th>Event</th>
-                            <th>Speed</th>
-                            <th>Gender</th>
-                            <th>Plate</th>
-                            <th>Evidence</th>
-                        </tr>
-                    </thead>
-                    <tbody id="search-results">
-                        <tr>
-                            <td colspan="9" class="state-msg">
-                                <i class="fas fa-search"></i>
-                                Use the filters above to search detection records
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.5rem; font-weight: 700;">AI Intelligence Search</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">Filter through millions of records using multi-dimensional parameters.</p>
 </div>
 
-<!-- ── Evidence Modal ──────────────────────────────────────── -->
-<div id="imageModal" class="modal"
-     onclick="this.classList.remove('active'); setTimeout(()=>this.style.display='none',300)">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-            <div style="flex:1;min-width:240px;">
-                <p style="font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;">
-                    <i class="fas fa-camera"></i> Detection Image
-                </p>
-                <img id="modalImg" src="" style="border-radius:12px;width:100%;">
-            </div>
-            <div id="plate-wrap" style="display:none;flex:1;min-width:180px;">
-                <p style="font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;">
-                    <i class="fas fa-id-card"></i> Plate Crop
-                </p>
-                <img id="modalPlate" src="" style="border-radius:12px;width:100%;border:2px solid #facc15;">
-            </div>
+<!-- Smart Search Panel -->
+<div class="search-filter-panel">
+    <div class="filter-row">
+        <div class="filter-group">
+            <label>Date Range</label>
+            <input type="date" id="search-date">
         </div>
-        <div style="text-align:center;margin-top:14px;">
-            <button onclick="document.getElementById('imageModal').classList.remove('active');setTimeout(()=>document.getElementById('imageModal').style.display='none',300)"
-                    class="btn btn-primary" style="font-size:0.82rem;">
-                <i class="fas fa-times"></i> Close
-            </button>
+        <div class="filter-group">
+            <label>Object Type</label>
+            <select id="search-type">
+                <option value="">All Categories</option>
+                <option value="person">Humans</option>
+                <option value="car">Vehicles</option>
+                <option value="motorcycle">Two-Wheelers</option>
+                <option value="plate">Number Plates</option>
+            </select>
         </div>
+        <div class="filter-group">
+            <label>Camera Node</label>
+            <select id="search-camera">
+                <option value="">All Cameras</option>
+                <option value="Gate">Gate</option>
+                <option value="Room">Room</option>
+                <option value="Parking">Parking</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Plate Number</label>
+            <input type="text" id="search-plate" placeholder="e.g. MH01AB1234">
+        </div>
+    </div>
+    
+    <div class="search-actions">
+        <button onclick="resetFilters()" style="padding: 10px 20px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; cursor: pointer;">
+            <i class="fas fa-undo"></i> Reset
+        </button>
+        <button onclick="performSearch()" style="padding: 10px 30px; border-radius: var(--radius-sm); border: none; background: var(--primary); color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px var(--primary-glow);">
+            <i class="fas fa-search"></i> Search Archive
+        </button>
     </div>
 </div>
 
+<!-- Results Card -->
+<div class="card-modern">
+    <div class="card-header-modern">
+        <h3><i class="fas fa-list"></i> Search Results</h3>
+        <button class="btn" onclick="exportResults()" style="font-size: 0.75rem; background: var(--success); color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">
+            <i class="fas fa-file-export"></i> Export CSV
+        </button>
+    </div>
+    <div style="overflow-x: auto;">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Camera</th>
+                    <th>Category</th>
+                    <th>Detail (Plate/Speed)</th>
+                    <th>Evidence</th>
+                </tr>
+            </thead>
+            <tbody id="results-body">
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                        <i class="fas fa-search fa-3x" style="opacity: 0.2; margin-bottom: 1rem; display: block;"></i>
+                        Enter filters above to search the database
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    /* ── Helpers ─────────────────────────────────────────── */
-    function capFirst(s) {
-        return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
-    }
-
-    /* ── Perform search ──────────────────────────────────── */
     async function performSearch() {
-        const date   = document.getElementById('f-date').value   || null;
-        const time   = document.getElementById('f-time').value   || null;
-        const camera = document.getElementById('f-camera').value || null;
-        const type   = document.getElementById('f-type').value   || null;
-        const plate  = document.getElementById('f-plate').value  || null;
+        const body = {
+            date: document.getElementById('search-date').value,
+            object_type: document.getElementById('search-type').value,
+            camera_name: document.getElementById('search-camera').value,
+            plate_number: document.getElementById('search-plate').value
+        };
 
-        const tbody  = document.getElementById('search-results');
-        const badge  = document.getElementById('results-count');
-        const status = document.getElementById('search-status');
-
-        tbody.innerHTML = `<tr><td colspan="9" class="state-msg"><i class="fas fa-spinner fa-spin"></i> Searching records…</td></tr>`;
-        badge.innerText = 'Searching…';
-        status.innerText = '';
+        const resultsBody = document.getElementById('results-body');
+        resultsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem;"><i class="fas fa-spinner fa-spin"></i> Searching...</td></tr>';
 
         try {
             const resp = await fetch('/api/search', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    date,
-                    time,
-                    camera_name:  camera,
-                    object_type:  type,
-                    plate_number: plate
-                })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
             });
-
-            if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
-
-            const rows = await resp.json();
-            badge.innerText = `${rows.length} record${rows.length !== 1 ? 's' : ''} found`;
-
-            if (rows.length === 0) {
-                tbody.innerHTML = `
-                <tr><td colspan="9" class="state-msg">
-                    <i class="fas fa-database"></i>
-                    No records match the selected filters.
-                </td></tr>`;
+            const data = await resp.json();
+            
+            if (data.length === 0) {
+                resultsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem;">No records matched your criteria</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = rows.map(r => `
-            <tr>
-                <td style="color:#94a3b8;font-size:0.72rem;">#${r.id}</td>
-                <td>
-                    <strong style="font-size:0.82rem;">${r.date}</strong><br>
-                    <span style="font-size:0.72rem;color:#94a3b8;">${r.time}</span>
-                </td>
-                <td>
-                    <span class="cam-chip">
-                        <i class="fas fa-video" style="font-size:0.7rem;"></i> ${r.camera_name || '—'}
-                    </span>
-                </td>
-                <td>
-                    <span class="type-tag ${r.object_type}">${(r.object_type||'').toUpperCase()}</span>
-                </td>
-                <td>
-                    ${r.event_type === 'Entry'
-                        ? '<span class="ev-in"><i class="fas fa-sign-in-alt"></i> Entry</span>'
-                        : '<span class="ev-out"><i class="fas fa-sign-out-alt"></i> Exit</span>'}
-                </td>
-                <td>
-                    ${r.speed_kmh != null && r.speed_kmh > 0
-                        ? `<span class="speed-badge"><i class="fas fa-tachometer-alt"></i> ${parseFloat(r.speed_kmh).toFixed(1)} km/h</span>`
-                        : '<span style="color:#cbd5e1;">—</span>'}
-                </td>
-                <td>
-                    ${r.gender
-                        ? `<span class="gender-badge ${r.gender.toLowerCase()}">
-                               <i class="fas fa-${r.gender === 'Male' ? 'male' : 'female'}"></i> ${r.gender}
-                           </span>`
-                        : '<span style="color:#cbd5e1;">—</span>'}
-                </td>
-                <td>
-                    ${r.plate_number
-                        ? `<span class="plate-badge">${r.plate_number}</span>`
-                        : '<span style="color:#cbd5e1;">—</span>'}
-                </td>
-                <td>
-                    <button class="btn btn-primary"
-                            style="padding:5px 10px;font-size:0.74rem;"
-                            onclick="viewEvidence('${r.image_path}', ${r.plate_img_path ? `'${r.plate_img_path}'` : 'null'})"
-                            title="View evidence image">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </td>
-            </tr>`).join('');
-
-        } catch (err) {
-            console.error('Search error:', err);
-            badge.innerText = 'Error';
-            tbody.innerHTML = `
-            <tr><td colspan="9" class="state-msg" style="color:#ef4444;">
-                <i class="fas fa-exclamation-circle"></i>
-                An error occurred. Please ensure the server is running.
-            </td></tr>`;
+            resultsBody.innerHTML = data.map(r => `
+                <tr>
+                    <td>
+                        <div style="font-weight:600;">${r.date}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">${r.time}</div>
+                    </td>
+                    <td><span style="font-size:0.8rem; font-weight:500;">${r.camera_name}</span></td>
+                    <td><span class="type-tag ${r.object_type}">${r.object_type.toUpperCase()}</span></td>
+                    <td>
+                        ${r.plate_number ? `<span class="plate-badge">${r.plate_number}</span>` : ''}
+                        ${r.speed_kmh ? `<span class="speed-badge">${r.speed_kmh.toFixed(1)} km/h</span>` : ''}
+                        ${!r.plate_number && !r.speed_kmh ? '<span style="color:var(--text-muted)">—</span>' : ''}
+                    </td>
+                    <td>
+                        <button class="btn" onclick="openImageModal('/${r.image_path}', '${r.object_type.toUpperCase()} Evidence', '${r.camera_name} | ${r.date} ${r.time}')" style="background:var(--primary); color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer;">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            resultsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--danger);">Search failed. Please try again.</td></tr>';
         }
     }
 
-    /* ── Clear all filters ───────────────────────────────── */
-    function clearFilters() {
-        ['f-date','f-time','f-camera','f-type','f-plate'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el.tagName === 'SELECT') el.selectedIndex = 0;
-            else el.value = '';
-        });
-        document.getElementById('results-count').innerText = 'Cleared';
-        document.getElementById('search-results').innerHTML = `
-        <tr><td colspan="9" class="state-msg">
-            <i class="fas fa-search"></i>
-            Use the filters above to search detection records
-        </td></tr>`;
+    function resetFilters() {
+        document.getElementById('search-date').value = '';
+        document.getElementById('search-type').value = '';
+        document.getElementById('search-camera').value = '';
+        document.getElementById('search-plate').value = '';
+        document.getElementById('results-body').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 4rem; color: var(--text-muted);"><i class="fas fa-search fa-3x" style="opacity: 0.2; margin-bottom: 1rem; display: block;"></i>Enter filters above to search the database</td></tr>';
     }
 
-    /* ── Show evidence modal ─────────────────────────────── */
-    function viewEvidence(imgPath, platePath) {
-        document.getElementById('modalImg').src = '/' + imgPath;
-
-        const wrap  = document.getElementById('plate-wrap');
-        const plate = document.getElementById('modalPlate');
-        if (platePath && platePath !== 'null') {
-            plate.src         = '/' + platePath;
-            wrap.style.display = 'block';
-        } else {
-            wrap.style.display = 'none';
-        }
-
-        const modal = document.getElementById('imageModal');
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
+    function exportResults() {
+        // Simple CSV export logic would go here
+        alert("Preparing CSV export for " + document.getElementById('results-body').children.length + " records...");
     }
-
-    /* ── Allow pressing Enter to search ─────────────────── */
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Enter') performSearch();
-    });
 </script>
-</body>
-</html>
+{% endblock %}

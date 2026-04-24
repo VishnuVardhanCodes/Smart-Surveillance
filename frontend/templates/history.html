@@ -1,462 +1,190 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ITC PSPD BCM | SmartEye AI Sentinel</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        th, td {
-            padding: 13px 14px;
-            text-align: left;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            font-size: 0.82rem;
-        }
-        th {
-            background: #f8fafc;
-            font-weight: 600;
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-        tr:hover { background: rgba(37, 99, 235, 0.025); }
+{% extends "layout.html" %}
 
-        /* ── Type tags ──────────────────────────────── */
-        .type-tag {
-            padding: 3px 9px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 700;
-        }
-        .type-tag.person     { background: #e0f2fe; color: #0369a1; }
-        .type-tag.car,
-        .type-tag.truck,
-        .type-tag.bus        { background: #fef3c7; color: #92400e; }
-        .type-tag.motorcycle,
-        .type-tag.bicycle    { background: #ede9fe; color: #6d28d9; }
+{% block title %}{{ title | default('Historical Archive') }} | SmartSurveill{% endblock %}
 
-        /* ── Speed badge ────────────────────────────── */
-        .speed-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background: linear-gradient(135deg, #f59e0b, #ef4444);
-            color: white;
-            padding: 3px 9px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            white-space: nowrap;
-        }
+{% block extra_css %}
+<style>
+    .history-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .view-modes {
+        display: flex;
+        background: var(--bg-card);
+        padding: 5px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+    }
+    .view-btn {
+        padding: 8px 15px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        transition: var(--transition);
+    }
+    .view-btn.active {
+        background: var(--primary);
+        color: white;
+    }
+    .history-grid-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+    .history-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+    .history-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+    .history-card img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+    }
+    .card-body {
+        padding: 1rem;
+    }
+    .type-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 10px;
+        text-transform: uppercase;
+    }
+    .results-table { width: 100%; border-collapse: collapse; }
+    .results-table th, .results-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); }
+    .results-table th { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; background: var(--bg-main); }
+</style>
+{% endblock %}
 
-        /* ── Gender badge ───────────────────────────── */
-        .gender-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 3px 9px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-        .gender-badge.male   { background: #dbeafe; color: #1e40af; }
-        .gender-badge.female { background: #fdf2f8; color: #be185d; }
-
-        /* ── Plate badge ────────────────────────────── */
-        .plate-badge {
-            background: #1e293b;
-            color: #facc15;
-            font-family: 'Courier New', monospace;
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            padding: 3px 9px;
-            border-radius: 4px;
-            border: 1px solid #64748b;
-        }
-
-        /* ── Event badge ────────────────────────────── */
-        .badge {
-            background: var(--primary);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-        }
-        .event-in  { background: #dcfce7; color: #166534; border-radius: 12px; padding: 2px 8px; font-size:0.7rem; font-weight:700; }
-        .event-out { background: #fee2e2; color: #991b1b; border-radius: 12px; padding: 2px 8px; font-size:0.7rem; font-weight:700; }
-
-        /* ── Modal ──────────────────────────────────── */
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .modal.active { opacity: 1; }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 20px;
-            max-width: 80%;
-            box-shadow: var(--shadow-lg);
-            position: relative;
-        }
-        .modal-content img { width: 100%; border-radius: 12px; }
-
-        /* ── Scrollable table wrapper ───────────────── */
-        .table-scroll { max-height: 600px; overflow-y: auto; }
-        .table-scroll::-webkit-scrollbar { width: 5px; }
-        .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-
-        /* ── Full-width single table mode ───────────── */
-        .history-full { display: flex; flex-direction: column; gap: 2rem; }
-
-        /* ── Camera filter pills ─────────────────────── */
-        .filter-bar {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 1.2rem;
-        }
-        .filter-pill {
-            padding: 5px 14px;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: 2px solid transparent;
-            background: #f1f5f9;
-            color: #64748b;
-            transition: all 0.2s;
-        }
-        .filter-pill:hover,
-        .filter-pill.active {
-            background: #2563eb;
-            color: white;
-            border-color: #2563eb;
-        }
-    </style>
-</head>
-<body>
-<div class="app-container">
-
-    <!-- ════════════  SIDEBAR  ════════════ -->
-    <aside class="sidebar">
-        <div class="logo">
-            <i class="fas fa-shield-alt"></i>
-            <div style="display:flex !important;flex-direction:column !important;line-height:1.2;">
-                <span style="font-size:0.65rem;color:#94a3b8;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;">ITC PSPD BCM</span>
-                <span style="font-size:1rem;color:white;font-weight:700;letter-spacing:0.2px;">SmartEye AI Sentinel</span>
-            </div>
+{% block content %}
+<div class="history-toolbar">
+    <div>
+        <h1 style="font-size: 1.5rem; font-weight: 700;">{{ title | default('Historical Archive') }}</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Reviewing {{ detections | length }} matched records from the vision database.</p>
+    </div>
+    
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <div class="view-modes">
+            <button class="view-btn active" id="btn-table" onclick="setView('table')"><i class="fas fa-list"></i> Table</button>
+            <button class="view-btn" id="btn-grid" onclick="setView('grid')"><i class="fas fa-th"></i> Grid</button>
         </div>
-        <nav>
-            <a href="/"         class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
-            <a href="/history"  class="nav-link {{ 'active' if request.path == '/history' else '' }}">
-                <i class="fas fa-history"></i><span>History</span>
-            </a>
-            <a href="/humans"   class="nav-link {{ 'active' if request.path == '/humans' else '' }}">
-                <i class="fas fa-user-friends"></i><span>Humans</span>
-            </a>
-            <a href="/bikes"    class="nav-link {{ 'active' if request.path == '/bikes' else '' }}">
-                <i class="fas fa-motorcycle"></i><span>Two-Wheelers</span>
-            </a>
-            <a href="/vehicles" class="nav-link {{ 'active' if request.path == '/vehicles' else '' }}">
-                <i class="fas fa-car-side"></i><span>Vehicles</span>
-            </a>
-            <a href="/plates"   class="nav-link {{ 'active' if request.path == '/plates' else '' }}">
-                <i class="fas fa-id-card"></i><span>Number Plates</span>
-            </a>
-            <a href="/reports"  class="nav-link {{ 'active' if request.path == '/reports' else '' }}">
-                <i class="fas fa-file-pdf"></i><span>Reports</span>
-            </a>
-            <a href="/search"   class="nav-link {{ 'active' if request.path == '/search' else '' }}">
-                <i class="fas fa-search"></i><span>Search</span>
-            </a>
-        </nav>
-        <div class="sidebar-footer">
-            <div style="display:flex;align-items:center;gap:10px;color:#94a3b8;font-size:0.85rem;">
-                <div style="width:10px;height:10px;background:#10b981;border-radius:50%;box-shadow:0 0 10px rgba(16,185,129,0.5);"></div>
-                <span>System Active</span>
-            </div>
-        </div>
-    </aside>
-
-    <!-- ════════════  MAIN CONTENT  ════════════ -->
-    <main class="main-content">
-        <header>
-            <h1>{{ title | default('Archive Records') }}</h1>
-            <p>Detailed historical logs of all detected activity.</p>
-        </header>
-
-        <div class="history-full">
-
-            <!-- ── Camera filter pills ─────────────────── -->
-            <div class="filter-bar" id="filter-bar">
-                <span class="filter-pill active" onclick="filterTable('all', this)">All</span>
-                <span class="filter-pill" onclick="filterTable('Gate', this)">
-                    <i class="fas fa-door-open"></i> Gate
-                </span>
-                <span class="filter-pill" onclick="filterTable('Room', this)">
-                    <i class="fas fa-home"></i> Room
-                </span>
-                <span class="filter-pill" onclick="filterTable('Parking', this)">
-                    <i class="fas fa-parking"></i> Parking
-                </span>
-            </div>
-
-            <!-- ── Side-by-side Entry / Exit ─────────────── -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;">
-
-                <!-- ENTRY (IN) -->
-                <div class="card">
-                    <div class="card-header" style="border-bottom:3px solid var(--accent);">
-                        <h3><i class="fas fa-sign-in-alt" style="color:var(--accent);"></i> Entry Logs (IN)</h3>
-                        <span class="badge" style="background:var(--accent);">
-                            {{ detections | selectattr('event_type', 'equalto', 'Entry') | list | length }} Records
-                        </span>
-                    </div>
-                    <div class="table-scroll">
-                        <table id="table-in">
-                            <thead>
-                                <tr>
-                                    <th>Date / Time</th>
-                                    <th>Camera</th>
-                                    <th>Type</th>
-                                    <th>Speed</th>
-                                    <th>Gender</th>
-                                    <th>Plate</th>
-                                    <th>Evidence</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for record in detections if record.event_type == 'Entry' %}
-                                <tr data-camera="{{ record.camera_name }}">
-                                    <td>
-                                        <strong>{{ record.date }}</strong><br>
-                                        <span style="font-size:0.75rem;color:var(--text-muted);">{{ record.time }}</span>
-                                    </td>
-                                    <td>
-                                        <span style="font-size:0.78rem;font-weight:600;color:#2563eb;">
-                                            <i class="fas fa-video" style="font-size:0.7rem;"></i> {{ record.camera_name }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="type-tag {{ record.object_type }}">
-                                            {{ record.object_type | upper }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if record.speed_kmh is not none and record.speed_kmh %}
-                                            <span class="speed-badge">
-                                                <i class="fas fa-tachometer-alt"></i>
-                                                {{ "%.1f"|format(record.speed_kmh) }} km/h
-                                            </span>
-                                        {% else %}
-                                            <span style="color:#cbd5e1;font-size:0.7rem;">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if record.gender %}
-                                            <span class="gender-badge {{ record.gender | lower }}">
-                                                <i class="fas fa-{{ 'male' if record.gender == 'Male' else 'female' }}"></i>
-                                                {{ record.gender }}
-                                            </span>
-                                        {% else %}
-                                            <span style="color:#cbd5e1;font-size:0.7rem;">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if record.plate_number %}
-                                            <span class="plate-badge">{{ record.plate_number }}</span>
-                                        {% else %}
-                                            <span style="color:#cbd5e1;font-size:0.7rem;">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-primary"
-                                                onclick="showImage('{{ record.image_path }}'{% if record.plate_img_path %}, '{{ record.plate_img_path }}'{% endif %})"
-                                                style="padding:5px 10px;font-size:0.75rem;"
-                                                title="View evidence">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem;">No entry records found.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- EXIT (OUT) -->
-                <div class="card">
-                    <div class="card-header" style="border-bottom:3px solid var(--danger);">
-                        <h3><i class="fas fa-sign-out-alt" style="color:var(--danger);"></i> Exit Logs (OUT)</h3>
-                        <span class="badge" style="background:var(--danger);">
-                            {{ detections | selectattr('event_type', 'equalto', 'Exit') | list | length }} Records
-                        </span>
-                    </div>
-                    <div class="table-scroll">
-                        <table id="table-out">
-                            <thead>
-                                <tr>
-                                    <th>Date / Time</th>
-                                    <th>Camera</th>
-                                    <th>Type</th>
-                                    <th>Speed</th>
-                                    <th>Gender</th>
-                                    <th>Plate</th>
-                                    <th>Evidence</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for record in detections if record.event_type == 'Exit' %}
-                                <tr data-camera="{{ record.camera_name }}">
-                                    <td>
-                                        <strong>{{ record.date }}</strong><br>
-                                        <span style="font-size:0.75rem;color:var(--text-muted);">{{ record.time }}</span>
-                                    </td>
-                                    <td>
-                                        <span style="font-size:0.78rem;font-weight:600;color:#2563eb;">
-                                            <i class="fas fa-video" style="font-size:0.7rem;"></i> {{ record.camera_name }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="type-tag {{ record.object_type }}">
-                                            {{ record.object_type | upper }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if record.speed_kmh is not none and record.speed_kmh %}
-                                            <span class="speed-badge">
-                                                <i class="fas fa-tachometer-alt"></i>
-                                                {{ "%.1f"|format(record.speed_kmh) }} km/h
-                                            </span>
-                                        {% else %}
-                                            <span style="color:#cbd5e1;font-size:0.7rem;">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if record.gender %}
-                                            <span class="gender-badge {{ record.gender | lower }}">
-                                                <i class="fas fa-{{ 'male' if record.gender == 'Male' else 'female' }}"></i>
-                                                {{ record.gender }}
-                                            </span>
-                                        {% else %}
-                                            <span style="color:#cbd5e1;font-size:0.7rem;">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if record.plate_number %}
-                                            <span class="plate-badge">{{ record.plate_number }}</span>
-                                        {% else %}
-                                            <span style="color:#cbd5e1;font-size:0.7rem;">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-primary"
-                                                onclick="showImage('{{ record.image_path }}'{% if record.plate_img_path %}, '{{ record.plate_img_path }}'{% endif %})"
-                                                style="padding:5px 10px;font-size:0.75rem;"
-                                                title="View evidence">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem;">No exit records found.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </div><!-- /grid -->
-        </div><!-- /history-full -->
-    </main>
-</div>
-
-<!-- ── Image / Evidence Modal ──────────────────────────────── -->
-<div id="imageModal" class="modal"
-     onclick="this.classList.remove('active'); setTimeout(() => this.style.display='none', 300)">
-    <div class="modal-content" onclick="event.stopPropagation()" style="max-width:680px;width:90%;">
-        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-            <!-- Main detection image -->
-            <div style="flex:1;min-width:260px;">
-                <p style="font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;">
-                    <i class="fas fa-camera"></i> Detection Image
-                </p>
-                <img id="modalImg" src="" style="border-radius:12px;width:100%;">
-            </div>
-            <!-- Plate image (shown only when available) -->
-            <div id="plate-img-wrap" style="display:none;flex:1;min-width:200px;">
-                <p style="font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;">
-                    <i class="fas fa-id-card"></i> Number Plate Crop
-                </p>
-                <img id="modalPlateImg" src="" style="border-radius:12px;width:100%;border:2px solid #facc15;">
-            </div>
-        </div>
-        <div style="text-align:center;margin-top:12px;">
-            <button onclick="document.getElementById('imageModal').classList.remove('active');setTimeout(()=>document.getElementById('imageModal').style.display='none',300)"
-                    class="btn btn-primary" style="font-size:0.8rem;">
-                <i class="fas fa-times"></i> Close
-            </button>
+        <div class="filter-bar">
+            <select id="cam-filter" onchange="filterRecords()" style="padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card);">
+                <option value="all">All Cameras</option>
+                <option value="Gate">Gate</option>
+                <option value="Room">Room</option>
+                <option value="Parking">Parking</option>
+            </select>
         </div>
     </div>
 </div>
 
+<!-- Table View -->
+<div id="view-table" class="card-modern" style="overflow-x: auto;">
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Camera</th>
+                <th>Category</th>
+                <th>Details</th>
+                <th>Evidence</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in detections %}
+            <tr class="record-row" data-camera="{{ record.camera_name }}">
+                <td>
+                    <div style="font-weight:600;">{{ record.date }}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">{{ record.time }}</div>
+                </td>
+                <td><span style="font-size:0.8rem; font-weight:500;">{{ record.camera_name }}</span></td>
+                <td><span class="type-tag {{ record.object_type }}">{{ record.object_type | upper }}</span></td>
+                <td>
+                    {% if record.plate_number %}<span class="plate-badge">{{ record.plate_number }}</span>{% endif %}
+                    {% if record.speed_kmh %}<span class="speed-badge">{{ "%.1f"|format(record.speed_kmh) }} km/h</span>{% endif %}
+                </td>
+                <td>
+                    <button class="btn" onclick="openImageModal('/{{ record.image_path }}', '{{ record.object_type | upper }} Evidence', '{{ record.camera_name }} | {{ record.date }} {{ record.time }}')" style="background:var(--primary); color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer;">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Grid View (Hidden by default) -->
+<div id="view-grid" class="history-grid-view" style="display:none;">
+    {% for record in detections %}
+    <div class="history-card record-row" data-camera="{{ record.camera_name }}">
+        <img src="/{{ record.image_path }}" loading="lazy" onclick="openImageModal('/{{ record.image_path }}', '{{ record.object_type | upper }} Evidence', '{{ record.camera_name }} | {{ record.date }} {{ record.time }}')" style="cursor:pointer;">
+        <div class="card-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span class="type-badge {{ record.object_type }}" style="background:var(--bg-main); color:var(--primary);">{{ record.object_type }}</span>
+                <span style="font-size:0.7rem; color:var(--text-muted); font-weight:600;">{{ record.time }}</span>
+            </div>
+            <div style="font-size:0.85rem; font-weight:600;">{{ record.camera_name }} Camera</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">{{ record.date }}</div>
+            {% if record.plate_number %}
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.75rem; font-weight:600;">Plate Identified:</span>
+                <span class="plate-badge" style="font-size:0.65rem;">{{ record.plate_number }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    /* ── Show evidence modal (optionally with plate image) ── */
-    function showImage(path, platePath) {
-        const modal = document.getElementById('imageModal');
-        document.getElementById('modalImg').src = '/' + path;
+    function setView(mode) {
+        const tableView = document.getElementById('view-table');
+        const gridView = document.getElementById('view-grid');
+        const btnTable = document.getElementById('btn-table');
+        const btnGrid = document.getElementById('btn-grid');
 
-        const plateWrap = document.getElementById('plate-img-wrap');
-        const plateImg  = document.getElementById('modalPlateImg');
-
-        if (platePath) {
-            plateImg.src          = '/' + platePath;
-            plateWrap.style.display = 'block';
+        if (mode === 'table') {
+            tableView.style.display = 'block';
+            gridView.style.display = 'none';
+            btnTable.classList.add('active');
+            btnGrid.classList.remove('active');
         } else {
-            plateWrap.style.display = 'none';
+            tableView.style.display = 'none';
+            gridView.style.display = 'grid';
+            btnTable.classList.remove('active');
+            btnGrid.classList.add('active');
         }
-
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
     }
 
-    /* ── Camera filter pills ── */
-    function filterTable(camera, pill) {
-        // Highlight pill
-        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-
-        // Filter rows in both tables
-        ['table-in', 'table-out'].forEach(tblId => {
-            const rows = document.querySelectorAll(`#${tblId} tbody tr`);
-            rows.forEach(row => {
-                const cam = row.getAttribute('data-camera') || '';
-                row.style.display = (camera === 'all' || cam === camera) ? '' : 'none';
-            });
+    function filterRecords() {
+        const filter = document.getElementById('cam-filter').value;
+        const rows = document.querySelectorAll('.record-row');
+        rows.forEach(row => {
+            if (filter === 'all' || row.getAttribute('data-camera') === filter) {
+                row.style.display = row.tagName === 'TR' ? '' : 'block';
+            } else {
+                row.style.display = 'none';
+            }
         });
     }
 </script>
-</body>
-</html>
+{% endblock %}

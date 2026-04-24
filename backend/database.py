@@ -229,6 +229,28 @@ class DatabaseManager:
         conn.close()
         return rows
 
+    def get_all_ppe_violations(self, date=None, camera=None):
+        """Retrieve all PPE violations with optional filtering."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        query = "SELECT * FROM ppe_violations WHERE 1=1"
+        params = []
+        
+        if date:
+            query += " AND date = ?"
+            params.append(date)
+        if camera:
+            query += " AND camera_name = ?"
+            params.append(camera)
+            
+        query += " ORDER BY id DESC"
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+
     # ─────────────────────────────────────────────────────────────────────
     def get_ppe_stats_today(self):
         date_str = datetime.now().strftime("%Y-%m-%d")

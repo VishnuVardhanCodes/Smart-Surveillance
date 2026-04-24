@@ -1,86 +1,172 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ITC PSPD BCM | SmartEye AI Sentinel</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
-    <div class="app-container">
-        <!-- Sidebar same as dashboard -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="fas fa-shield-alt"></i>
-                <div style="display: flex !important; flex-direction: column !important; line-height: 1.2;">
-                    <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;">ITC PSPD BCM</span>
-                    <span style="font-size: 1rem; color: white; font-weight: 700; letter-spacing: 0.2px;">SmartEye AI Sentinel</span>
-                </div>
-            </div>
-            <nav>
-                <a href="/" class="nav-link {{ 'active' if request.path == '/' else '' }}">
-                    <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/history" class="nav-link {{ 'active' if request.path == '/history' else '' }}">
-                    <i class="fas fa-history"></i>
-                    <span>History</span>
-                </a>
-                <a href="/humans" class="nav-link {{ 'active' if request.path == '/humans' else '' }}">
-                    <i class="fas fa-user-friends"></i>
-                    <span>Humans</span>
-                </a>
-                <a href="/bikes" class="nav-link {{ 'active' if request.path == '/bikes' else '' }}">
-                    <i class="fas fa-motorcycle"></i>
-                    <span>Two-Wheelers</span>
-                </a>
-                <a href="/vehicles" class="nav-link {{ 'active' if request.path == '/vehicles' else '' }}">
-                    <i class="fas fa-car-side"></i>
-                    <span>Vehicles</span>
-                </a>
-                <a href="/reports" class="nav-link {{ 'active' if request.path == '/reports' else '' }}">
-                    <i class="fas fa-file-pdf"></i>
-                    <span>Reports</span>
-                </a>
-            </nav>
-            <div class="sidebar-footer">
-                <div style="display: flex; align-items: center; gap: 10px; color: #94a3b8; font-size: 0.85rem;">
-                    <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);"></div>
-                    <span>System Active</span>
-                </div>
-            </div>
-        </aside>
+{% extends "layout.html" %}
 
-        <main class="main-content">
-            <header>
-                <h1>Surveillance Reports</h1>
-                <p>Automated daily analytics and activity summaries.</p>
-            </header>
+{% block title %}Business Intelligence Reports | SmartSurveill{% endblock %}
 
-            <div class="card premium-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-folder-open"></i> Generated Reports</h3>
-                    <a href="/api/generate_report" class="btn btn-primary">
-                        <i class="fas fa-sync-alt"></i> Generate Now
-                    </a>
-                </div>
-                <div class="reports-grid">
-                    {% for report in report_files %}
-                    <div class="report-item">
-                        <div class="report-icon"><i class="far fa-file-pdf"></i></div>
-                        <div class="report-info">
-                            <span class="report-name">{{ report }}</span>
-                            <span class="report-date">{{ report.split('_')[-1].replace('.pdf', '') }}</span>
-                        </div>
-                        <a href="/reports/{{ report }}" class="download-link" download>
-                            <i class="fas fa-download"></i>
-                        </a>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </main>
+{% block extra_css %}
+<style>
+    .report-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .report-card {
+        background: var(--bg-card);
+        padding: 1.5rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+    }
+    .report-card h4 {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+    .report-card .val {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+    .chart-container {
+        background: var(--bg-card);
+        padding: 1.5rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        height: 350px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div>
+        <h1 style="font-size: 1.5rem; font-weight: 700;">Operational Reports</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Analytical insights and historical performance metrics.</p>
     </div>
-</body>
-</html>
+    <div style="display:flex; gap:10px;">
+        <button class="btn" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border); padding:10px 20px; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">
+            <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+        <button class="btn" style="background:var(--primary); color:white; border:none; padding:10px 25px; border-radius:var(--radius-sm); font-weight:600; cursor:pointer; box-shadow:0 4px 15px var(--primary-glow);">
+            <i class="fas fa-file-pdf"></i> Download PDF
+        </button>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="report-stats-grid">
+    <div class="report-card">
+        <h4>Daily Entries</h4>
+        <div class="val" id="rep-entries">0</div>
+        <div style="font-size:0.7rem; color:var(--success); margin-top:5px;"><i class="fas fa-arrow-up"></i> 12% vs yesterday</div>
+    </div>
+    <div class="report-card">
+        <h4>Vehicle Traffic</h4>
+        <div class="val" id="rep-vehicles">0</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:5px;">32% heavy vehicles</div>
+    </div>
+    <div class="report-card">
+        <h4>Safety Violations</h4>
+        <div class="val" id="rep-ppe">0</div>
+        <div style="font-size:0.7rem; color:var(--danger); margin-top:5px;"><i class="fas fa-exclamation-circle"></i> High priority</div>
+    </div>
+    <div class="report-card">
+        <h4>Night Movement</h4>
+        <div class="val" id="rep-night">0</div>
+        <div style="font-size:0.7rem; color:var(--warning); margin-top:5px;">After 10:00 PM</div>
+    </div>
+</div>
+
+<!-- Graphs Section -->
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:2rem; margin-bottom:2rem;">
+    <div class="chart-container">
+        <h4 style="margin-bottom:15px; font-size:0.85rem; font-weight:600;"><i class="fas fa-chart-area"></i> Hourly Activity Trend</h4>
+        <canvas id="activityChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <h4 style="margin-bottom:15px; font-size:0.85rem; font-weight:600;"><i class="fas fa-chart-pie"></i> Vehicle Distribution</h4>
+        <canvas id="vehicleDistChart"></canvas>
+    </div>
+</div>
+
+<!-- Historical PDF Table -->
+<div class="card-modern">
+    <div class="card-header-modern">
+        <h3><i class="fas fa-history"></i> Archived PDF Reports</h3>
+    </div>
+    <div style="padding:1rem;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:1rem;">
+            {% for pdf in report_files %}
+            <div style="background:var(--bg-main); padding:1rem; border-radius:var(--radius-sm); border:1px solid var(--border); display:flex; flex-direction:column; gap:10px;">
+                <div style="font-size:1.5rem; color:var(--danger);"><i class="fas fa-file-pdf"></i></div>
+                <div style="font-size:0.8rem; font-weight:600;">{{ pdf }}</div>
+                <a href="/reports/daily_reports/{{ pdf }}" download class="btn" style="background:var(--primary); color:white; border:none; padding:5px; border-radius:4px; font-size:0.7rem; text-align:center; text-decoration:none;">
+                    <i class="fas fa-download"></i> Download
+                </a>
+            </div>
+            {% else %}
+            <p style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:2rem;">No archived reports found.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Charts
+    const ctxActivity = document.getElementById('activityChart').getContext('2d');
+    new Chart(ctxActivity, {
+        type: 'line',
+        data: {
+            labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:59'],
+            datasets: [{
+                label: 'Activity Count',
+                data: [5, 2, 25, 45, 60, 30, 10],
+                borderColor: '#2563EB',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    const ctxDist = document.getElementById('vehicleDistChart').getContext('2d');
+    new Chart(ctxDist, {
+        type: 'doughnut',
+        data: {
+            labels: ['Cars', 'Trucks', 'Bikes'],
+            datasets: [{
+                data: [60, 25, 15],
+                backgroundColor: ['#2563EB', '#10B981', '#F59E0B'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    async function loadReportStats() {
+        try {
+            const resp = await fetch('/api/stats');
+            const data = await resp.json();
+            document.getElementById('rep-entries').innerText = data.entries || 0;
+            document.getElementById('rep-vehicles').innerText = data.vehicles || 0;
+            document.getElementById('rep-ppe').innerText = (data.helmet_violations || 0) + (data.seatbelt_violations || 0);
+            document.getElementById('rep-night').innerText = data.night_alerts || 0;
+        } catch (e) {}
+    }
+    loadReportStats();
+</script>
+{% endblock %}

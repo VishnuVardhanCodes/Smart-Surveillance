@@ -1,0 +1,341 @@
+{% extends "layout.html" %}
+
+{% block title %}PPE Violations | SmartSurveill{% endblock %}
+
+{% block extra_css %}
+<style>
+    .violations-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .filter-bar {
+        display: flex;
+        gap: 1rem;
+        background: var(--bg-card);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        align-items: center;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-input {
+        background: var(--bg-main);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        outline: none;
+    }
+
+    .view-toggle {
+        display: flex;
+        background: var(--bg-main);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+    }
+
+    .toggle-btn {
+        padding: 6px 12px;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        transition: all 0.2s;
+    }
+
+    .toggle-btn.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .violations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .violation-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+    }
+
+    .violation-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--danger);
+    }
+
+    .violation-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: var(--danger);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        z-index: 5;
+    }
+
+    .violation-img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .violation-info {
+        padding: 1rem;
+    }
+
+    .violation-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+
+    .violations-table-container {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        display: none;
+    }
+
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .modern-table th {
+        background: var(--bg-main);
+        padding: 12px 15px;
+        text-align: left;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .modern-table td {
+        padding: 12px 15px;
+        font-size: 0.85rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .modern-table tr:hover {
+        background: rgba(var(--primary-rgb), 0.05);
+    }
+
+    .table-img {
+        width: 60px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="violations-header">
+    <div>
+        <h1 style="font-size: 1.5rem; margin: 0;">PPE Safety Violations</h1>
+        <p style="color: var(--text-muted); margin: 0; font-size: 0.9rem;">Real-time industrial safety monitoring</p>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="filter-group">
+            <i class="fas fa-calendar" style="color: var(--text-muted);"></i>
+            <input type="date" id="dateFilter" class="filter-input">
+        </div>
+        <div class="filter-group">
+            <i class="fas fa-video" style="color: var(--text-muted);"></i>
+            <select id="cameraFilter" class="filter-input">
+                <option value="">All Cameras</option>
+                {% for cam in cameras %}
+                <option value="{{ cam }}">{{ cam }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button onclick="loadViolations()" class="btn" style="background: var(--primary); color: white; padding: 6px 15px;">
+            Filter
+        </button>
+        
+        <div style="width: 1px; height: 24px; background: var(--border); margin: 0 10px;"></div>
+        
+        <div class="view-toggle">
+            <button onclick="toggleView('grid')" id="gridToggle" class="toggle-btn active" title="Grid View"><i class="fas fa-th"></i></button>
+            <button onclick="toggleView('table')" id="tableToggle" class="toggle-btn" title="Table View"><i class="fas fa-list"></i></button>
+        </div>
+    </div>
+</div>
+
+<div id="loadingIndicator" style="text-align: center; padding: 3rem; display: none;">
+    <div class="spinner" style="margin: 0 auto;"></div>
+    <p style="margin-top: 1rem; color: var(--text-muted);">Fetching records...</p>
+</div>
+
+<div id="noData" style="text-align: center; padding: 5rem; display: none;">
+    <i class="fas fa-shield-check fa-4x" style="color: var(--success); opacity: 0.3; margin-bottom: 1rem;"></i>
+    <h3>No Violations Found</h3>
+    <p style="color: var(--text-muted);">Great! No safety protocols were breached for the selected filters.</p>
+</div>
+
+<div id="violationsGrid" class="violations-grid"></div>
+
+<div id="violationsTableContainer" class="violations-table-container">
+    <table class="modern-table">
+        <thead>
+            <tr>
+                <th>Preview</th>
+                <th>Violation</th>
+                <th>Camera</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="violationsTableBody"></tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentViolations = [];
+
+    async function loadViolations() {
+        const date = document.getElementById('dateFilter').value;
+        const camera = document.getElementById('cameraFilter').value;
+        
+        const loader = document.getElementById('loadingIndicator');
+        const noData = document.getElementById('noData');
+        const grid = document.getElementById('violationsGrid');
+        const tableContainer = document.getElementById('violationsTableContainer');
+        
+        loader.style.display = 'block';
+        noData.style.display = 'none';
+        grid.style.display = 'none';
+        tableContainer.style.display = 'none';
+
+        try {
+            const resp = await fetch('/api/ppe_violations_filtered', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date, camera })
+            });
+            const data = await resp.json();
+            currentViolations = data;
+            
+            loader.style.display = 'none';
+            
+            if (data.length === 0) {
+                noData.style.display = 'block';
+                return;
+            }
+
+            renderGrid(data);
+            renderTable(data);
+            
+            const currentView = document.getElementById('gridToggle').classList.contains('active') ? 'grid' : 'table';
+            toggleView(currentView);
+
+        } catch (e) {
+            console.error(e);
+            loader.style.display = 'none';
+            alert("Failed to load violations.");
+        }
+    }
+
+    function renderGrid(data) {
+        const grid = document.getElementById('violationsGrid');
+        grid.innerHTML = data.map((v, idx) => `
+            <div class="violation-card animate-scale" onclick="openImageGallery(${idx})">
+                <span class="violation-badge">${v.violation_type}</span>
+                <img src="/${v.image_path}" class="violation-img" loading="lazy">
+                <div class="violation-info">
+                    <h4 style="margin: 0; font-size: 1rem;">${v.object_type}</h4>
+                    <div class="violation-meta">
+                        <span><i class="fas fa-video"></i> ${v.camera_name}</span>
+                        <span><i class="fas fa-clock"></i> ${v.date} ${v.time}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderTable(data) {
+        const body = document.getElementById('violationsTableBody');
+        body.innerHTML = data.map((v, idx) => `
+            <tr>
+                <td><img src="/${v.image_path}" class="table-img" onclick="openImageGallery(${idx})"></td>
+                <td style="color: var(--danger); font-weight: 600;">${v.violation_type}</td>
+                <td>${v.camera_name}</td>
+                <td>${v.date}</td>
+                <td>${v.time}</td>
+                <td>
+                    <button class="action-btn" onclick="openImageGallery(${idx})" title="View Details"><i class="fas fa-eye"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function toggleView(type) {
+        const grid = document.getElementById('violationsGrid');
+        const table = document.getElementById('violationsTableContainer');
+        const gridBtn = document.getElementById('gridToggle');
+        const tableBtn = document.getElementById('tableToggle');
+
+        if (type === 'grid') {
+            grid.style.display = 'grid';
+            table.style.display = 'none';
+            gridBtn.classList.add('active');
+            tableBtn.classList.remove('active');
+        } else {
+            grid.style.display = 'none';
+            table.style.display = 'block';
+            gridBtn.classList.remove('active');
+            tableBtn.classList.add('active');
+        }
+    }
+
+    function openImageGallery(index) {
+        const violation = currentViolations[index];
+        const allImages = currentViolations.map(v => `/${v.image_path}`);
+        openImageModal(
+            `/${violation.image_path}`, 
+            `PPE Violation: ${violation.violation_type}`,
+            `${violation.camera_name} | ${violation.date} ${violation.time}`,
+            allImages
+        );
+    }
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        // document.getElementById('dateFilter').value = today;
+        loadViolations();
+    });
+</script>
+{% endblock %}

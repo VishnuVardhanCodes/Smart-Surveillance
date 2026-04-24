@@ -85,6 +85,14 @@ def search_page():
     return render_template('search.html')
 
 
+@app.route('/ppe-violations')
+def ppe_violations_page():
+    """PPE Violations history page."""
+    # Fetch all camera names for filter
+    cameras = camera_manager.get_all_camera_names()
+    return render_template('ppe_violations.html', cameras=cameras)
+
+
 @app.route('/api/search', methods=['POST'])
 def api_search():
     """
@@ -204,6 +212,17 @@ def ppe_violations():
     return jsonify([dict(row) for row in violations])
 
 
+@app.route('/api/ppe_violations_filtered', methods=['POST'])
+def ppe_violations_filtered():
+    """Returns filtered PPE violations."""
+    body   = request.get_json(force=True, silent=True) or {}
+    date   = body.get('date') or None
+    camera = body.get('camera') or None
+    
+    rows = db.get_all_ppe_violations(date=date, camera=camera)
+    return jsonify([dict(r) for r in rows])
+
+
 @app.route('/api/seatbelt_violations')
 def seatbelt_violations():
     violations = db.get_recent_seatbelt_violations(5)
@@ -232,6 +251,44 @@ def restricted_violations():
 def sleep_violations():
     violations = db.get_recent_sleep_violations(5)
     return jsonify([dict(row) for row in violations])
+
+
+@app.route('/api/activity_feed')
+def activity_feed():
+    """Returns a unified feed of recent detections and violations."""
+    # Get recent detections
+    detections = db.get_all_detections()[:15]
+    # Get recent PPE violations
+    ppe = db.get_recent_ppe_violations(15)
+    
+    feed = []
+    for d in detections:
+        feed.append({
+            'id': d['id'],
+            'type': 'detection',
+            'category': d['object_type'],
+            'message': f"{d['object_type']} {d['event_type']} at {d['camera_name']}",
+            'time': d['time'],
+            'date': d['date'],
+            'image': f"/{d['image_path']}",
+            'camera': d['camera_name']
+        })
+    
+    for v in ppe:
+        feed.append({
+            'id': v['id'],
+            'type': 'violation',
+            'category': 'PPE',
+            'message': f"PPE VIOLATION: {v['violation_type']} at {v['camera_name']}",
+            'time': v['time'],
+            'date': v['date'],
+            'image': f"/{v['image_path']}",
+            'camera': v['camera_name']
+        })
+    
+    # Sort by time/id descending
+    feed.sort(key=lambda x: (x['date'], x['time']), reverse=True)
+    return jsonify(feed[:15])
 
 
 @app.route('/api/stats')

@@ -1,0 +1,177 @@
+{% extends "layout.html" %}
+
+{% block title %}Camera Management | SmartSurveill{% endblock %}
+
+{% block extra_css %}
+<style>
+    .camera-management-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+    }
+    .camera-admin-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+    .cam-admin-preview {
+        height: 200px;
+        background: #000;
+        position: relative;
+    }
+    .cam-admin-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .cam-admin-info {
+        padding: 1.5rem;
+    }
+    .cam-admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    .cam-admin-status {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .status-active { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .status-offline { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+    
+    .cam-admin-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+    .admin-btn {
+        padding: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-main);
+        color: var(--text-main);
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+    .admin-btn:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    .admin-btn.danger:hover {
+        background: var(--danger);
+        border-color: var(--danger);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div>
+        <h1 style="font-size: 1.5rem; font-weight: 700;">Camera Infrastructure</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Manage live nodes, restart processes, and verify hardware health.</p>
+    </div>
+    <button class="btn" style="background:var(--primary); color:white; border:none; padding:10px 25px; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;">
+        <i class="fas fa-plus"></i> Register New Camera
+    </button>
+</div>
+
+<div class="camera-management-grid">
+    <!-- Camera Node: Gate -->
+    <div class="camera-admin-card">
+        <div class="cam-admin-preview">
+            <img src="{{ url_for('video_feed', camera_name='Gate') }}">
+            <div style="position:absolute; top:10px; right:10px;" class="cam-admin-status status-active">ACTIVE</div>
+        </div>
+        <div class="cam-admin-info">
+            <div class="cam-admin-header">
+                <div>
+                    <h3 style="font-size:1.1rem; font-weight:600;">Gate Main Entry</h3>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">IP: 192.168.1.104 | 1080p @ 30FPS</span>
+                </div>
+            </div>
+            <div class="cam-admin-actions">
+                <button class="admin-btn" onclick="controlCamera('Gate', 'restart')"><i class="fas fa-sync"></i> Restart</button>
+                <button class="admin-btn danger" onclick="controlCamera('Gate', 'stop')"><i class="fas fa-power-off"></i> Stop</button>
+                <button class="admin-btn" onclick="location.href='/'"><i class="fas fa-expand"></i> Monitor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Node: Room -->
+    <div class="camera-admin-card">
+        <div class="cam-admin-preview">
+            <img src="{{ url_for('video_feed', camera_name='Room') }}">
+            <div style="position:absolute; top:10px; right:10px;" class="cam-admin-status status-active">ACTIVE</div>
+        </div>
+        <div class="cam-admin-info">
+            <div class="cam-admin-header">
+                <div>
+                    <h3 style="font-size:1.1rem; font-weight:600;">Server Room Node</h3>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">IP: 192.168.1.105 | 720p @ 24FPS</span>
+                </div>
+            </div>
+            <div class="cam-admin-actions">
+                <button class="admin-btn" onclick="controlCamera('Room', 'restart')"><i class="fas fa-sync"></i> Restart</button>
+                <button class="admin-btn danger" onclick="controlCamera('Room', 'stop')"><i class="fas fa-power-off"></i> Stop</button>
+                <button class="admin-btn" onclick="location.href='/'"><i class="fas fa-expand"></i> Monitor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Node: Parking -->
+    <div class="camera-admin-card">
+        <div class="cam-admin-preview">
+            <img src="{{ url_for('video_feed', camera_name='Parking') }}">
+            <div style="position:absolute; top:10px; right:10px;" class="cam-admin-status status-active">ACTIVE</div>
+        </div>
+        <div class="cam-admin-info">
+            <div class="cam-admin-header">
+                <div>
+                    <h3 style="font-size:1.1rem; font-weight:600;">South Parking Zone</h3>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">IP: 192.168.1.106 | 1080p @ 15FPS</span>
+                </div>
+            </div>
+            <div class="cam-admin-actions">
+                <button class="admin-btn" onclick="controlCamera('Parking', 'restart')"><i class="fas fa-sync"></i> Restart</button>
+                <button class="admin-btn danger" onclick="controlCamera('Parking', 'stop')"><i class="fas fa-power-off"></i> Stop</button>
+                <button class="admin-btn" onclick="location.href='/'"><i class="fas fa-expand"></i> Monitor</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function controlCamera(cam, action) {
+        if (!confirm(`Are you sure you want to ${action} camera ${cam}?`)) return;
+        
+        try {
+            const resp = await fetch('/api/camera_control', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({camera: cam, action: action})
+            });
+            const data = await resp.json();
+            if (data.status === 'success') {
+                alert(`Camera ${cam} ${action} command sent successfully.`);
+            }
+        } catch (e) {
+            alert("Action failed.");
+        }
+    }
+</script>
+{% endblock %}
