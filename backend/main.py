@@ -3,6 +3,8 @@ from flask import (Flask, render_template, Response, request,
 import cv2
 import threading
 import os
+import json
+import psutil
 import numpy as np
 from datetime import datetime
 
@@ -115,6 +117,21 @@ def plates():
                            title="NUMBER PLATE DETECTIONS", detections=detections)
 
 
+@app.route('/settings')
+def settings_page():
+    return render_template('settings.html')
+
+
+@app.route('/cameras')
+def cameras_page():
+    return render_template('cameras.html')
+
+
+@app.route('/logs')
+def logs_page():
+    return render_template('logs.html')
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Video stream
 # ─────────────────────────────────────────────────────────────────────────────
@@ -221,6 +238,57 @@ def sleep_violations():
 def get_global_stats():
     stats = db.get_global_stats()
     return jsonify(stats)
+
+
+@app.route('/api/system_health')
+def system_health():
+    """Return CPU, Memory and Disk usage."""
+    try:
+        cpu = psutil.cpu_percent(interval=None)
+        memory = psutil.virtual_memory().percent
+        disk = psutil.disk_usage('/').percent
+        return jsonify({
+            "cpu": cpu,
+            "memory": memory,
+            "disk": disk,
+            "status": "Healthy"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/settings', methods=['GET', 'POST'])
+def handle_settings():
+    """Read or update system settings."""
+    settings_path = os.path.join(os.path.dirname(__file__), 'config', 'settings.json')
+    
+    if request.method == 'POST':
+        new_settings = request.json
+        with open(settings_path, 'w') as f:
+            json.dump(new_settings, f, indent=4)
+        return jsonify({"status": "success"})
+    
+    # GET
+    if os.path.exists(settings_path):
+        with open(settings_path, 'r') as f:
+            return jsonify(json.load(f))
+    return jsonify({})
+
+
+@app.route('/api/camera_control', methods=['POST'])
+def camera_control():
+    """Simulate camera start/stop/restart."""
+    data = request.json
+    camera_id = data.get('camera')
+    action = data.get('action') # start, stop, restart
+    
+    # In a real system, we would manage the CaptureThread here
+    # For now, we simulate success
+    return jsonify({
+        "status": "success",
+        "camera": camera_id,
+        "action": action
+    })
 
 
 @app.route('/api/generate_report')
