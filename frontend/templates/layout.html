@@ -25,65 +25,79 @@
 <div class="app-container">
     <!-- Advanced Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo-container">
-                <div class="logo-icon"><i class="fas fa-shield-alt"></i></div>
-                <span class="logo-text">SmartSurveill</span>
+        <div class="sidebar-header" style="height: auto; padding: 20px 1.5rem;">
+            <div class="logo-container" style="display: flex; align-items: center; gap: 15px; white-space: nowrap;">
+                <div class="logo-icon" style="min-width: 50px; height: 50px; background: linear-gradient(135deg, #2563EB, #60A5FA); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4); position: relative; overflow: hidden;">
+                    <!-- Custom AI Sentinel SVG Icon -->
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L4 5V11C4 16.19 7.41 21.05 12 22.5C16.59 21.05 20 16.19 20 11V5L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="3" stroke="white" stroke-width="2"/>
+                        <path d="M12 9V7M12 17V15M15 12H17M7 12H9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="brand-text" style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-size: 14px; font-weight: 700; color: #60A5FA; letter-spacing: 1.5px; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">ITC PSPD BCM</span>
+                    <span style="font-size: 19px; font-weight: 800; color: white; letter-spacing: 0.5px; line-height: 1.1;">SmartEye AI Sentinel</span>
+                </div>
             </div>
         </div>
         
         <nav class="sidebar-nav">
             <div class="nav-group">
-                <span class="nav-label">Main Menu</span>
-                <a href="/" class="nav-item {{ 'active' if request.path == '/' else '' }}">
+                <span class="nav-label">MAIN MENU</span>
+                <a href="/" class="nav-item {{ 'active' if request.path == '/' else '' }}" title="Dashboard">
                     <i class="fas fa-chart-line"></i>
                     <span class="nav-text">Dashboard</span>
                 </a>
-                <a href="/history" class="nav-item {{ 'active' if request.path == '/history' else '' }}">
+                <a href="/history" class="nav-item {{ 'active' if request.path == '/history' else '' }}" title="History Archive">
                     <i class="fas fa-history"></i>
                     <span class="nav-text">History</span>
                 </a>
-                <a href="/humans" class="nav-item {{ 'active' if request.path == '/humans' else '' }}">
+                <a href="/humans" class="nav-item {{ 'active' if request.path == '/humans' else '' }}" title="Human Detections">
                     <i class="fas fa-users"></i>
                     <span class="nav-text">Humans</span>
                 </a>
-                <a href="/bikes" class="nav-item {{ 'active' if request.path == '/bikes' else '' }}">
+                <a href="/bikes" class="nav-item {{ 'active' if request.path == '/bikes' else '' }}" title="Two-Wheeler Detections">
                     <i class="fas fa-motorcycle"></i>
                     <span class="nav-text">Two-Wheelers</span>
                 </a>
-                <a href="/vehicles" class="nav-item {{ 'active' if request.path == '/vehicles' else '' }}">
+                <a href="/vehicles" class="nav-item {{ 'active' if request.path == '/vehicles' else '' }}" title="Vehicle Detections">
                     <i class="fas fa-car"></i>
                     <span class="nav-text">Vehicles</span>
+                </a>
+                <a href="/ppe-violations" class="nav-item {{ 'active' if request.path == '/ppe-violations' else '' }}" title="View PPE Violations">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span class="nav-text">PPE Safety Violations</span>
                 </a>
             </div>
             
             <div class="nav-group">
-                <span class="nav-label">Analytics</span>
-                <a href="/plates" class="nav-item {{ 'active' if request.path == '/plates' else '' }}">
+                <span class="nav-label">ANALYTICS</span>
+                <a href="/plates" class="nav-item {{ 'active' if request.path == '/plates' else '' }}" title="Number Plate Recognition">
                     <i class="fas fa-id-card"></i>
                     <span class="nav-text">Number Plates</span>
                 </a>
-                <a href="/reports" class="nav-item {{ 'active' if request.path == '/reports' else '' }}">
+                <a href="/reports" class="nav-item {{ 'active' if request.path == '/reports' else '' }}" title="Generate Reports">
                     <i class="fas fa-file-contract"></i>
                     <span class="nav-text">Reports</span>
                 </a>
-                <a href="/search" class="nav-item {{ 'active' if request.path == '/search' else '' }}">
+                <a href="/search" class="nav-item {{ 'active' if request.path == '/search' else '' }}" title="Smart AI Search">
                     <i class="fas fa-search"></i>
                     <span class="nav-text">Search</span>
                 </a>
             </div>
             
             <div class="nav-group">
-                <span class="nav-label">System</span>
-                <a href="/cameras" class="nav-item {{ 'active' if request.path == '/cameras' else '' }}">
+                <span class="nav-label">SYSTEM</span>
+                <a href="/cameras" class="nav-item {{ 'active' if request.path == '/cameras' else '' }}" title="Camera Settings">
                     <i class="fas fa-video"></i>
                     <span class="nav-text">Camera Manager</span>
                 </a>
-                <a href="/logs" class="nav-item {{ 'active' if request.path == '/logs' else '' }}">
+                <a href="/logs" class="nav-item {{ 'active' if request.path == '/logs' else '' }}" title="System Event Logs">
                     <i class="fas fa-terminal"></i>
                     <span class="nav-text">System Logs</span>
                 </a>
-                <a href="/settings" class="nav-item {{ 'active' if request.path == '/settings' else '' }}">
+                <a href="/settings" class="nav-item {{ 'active' if request.path == '/settings' else '' }}" title="Application Settings">
                     <i class="fas fa-cog"></i>
                     <span class="nav-text">Settings</span>
                 </a>

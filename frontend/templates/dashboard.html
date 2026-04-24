@@ -41,6 +41,36 @@
         overflow: hidden;
         aspect-ratio: 16/9;
         box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+    }
+
+    .camera-header-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 45px;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 15px;
+        z-index: 20;
+        transition: opacity 0.3s;
+    }
+
+    .cam-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .cam-name-text {
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
 
     .camera-loading {
@@ -53,23 +83,54 @@
         z-index: 5;
     }
 
-    .camera-status-badge {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        padding: 4px 10px;
-        border-radius: 20px;
+    .status-badge {
         font-size: 0.65rem;
-        font-weight: 700;
-        text-transform: uppercase;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         gap: 5px;
-        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
-    .status-online { background: rgba(16, 185, 129, 0.9); color: white; }
-    .status-offline { background: rgba(239, 68, 68, 0.9); color: white; }
+    .status-badge.online { background: #10B981; color: white; }
+    .status-badge.offline { background: #EF4444; color: white; }
+
+    .status-badge .dot {
+        width: 6px;
+        height: 6px;
+        background: white;
+        border-radius: 50%;
+        animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.5); opacity: 0.5; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    .fs-btn-wrap {
+        background: rgba(0,0,0,0.5);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .fs-btn-wrap:hover {
+        background: rgba(0,0,0,0.8);
+        transform: scale(1.1);
+        border-color: var(--primary);
+        box-shadow: 0 0 15px var(--primary-glow);
+    }
 
     .offline-placeholder {
         position: absolute;
@@ -164,29 +225,34 @@
     <div class="camera-grid-2x2">
         {% for cam in ['Gate', 'Room', 'Parking'] %}
         <div class="camera-container" id="container-{{ cam }}">
+            <!-- Camera Header Bar -->
+            <div class="camera-header-bar">
+                <div class="cam-title-wrap">
+                    <span class="cam-name-text">{{ cam | upper }} CAMERA</span>
+                    <div class="status-badge online" id="status-{{ cam }}">
+                        <div class="dot"></div> LIVE
+                    </div>
+                </div>
+                <div class="fs-btn-wrap" onclick="openVideoModal('{{ cam }}')" title="Open Fullscreen">
+                    <i class="fas fa-expand" style="font-size: 16px;"></i>
+                </div>
+            </div>
+
             <div class="camera-loading" id="loader-{{ cam }}">
                 <div class="spinner"></div>
             </div>
             
-            <div class="camera-status-badge status-online" id="status-{{ cam }}">
-                <i class="fas fa-circle" style="font-size: 0.5rem;"></i> ONLINE
-            </div>
-
             <img id="stream-{{ cam }}" src="" style="width:100%; height:100%; object-fit:cover;" 
                  onload="document.getElementById('loader-{{ cam }}').style.display='none'"
                  onerror="handleCameraError('{{ cam }}')">
             
-            <div class="camera-overlay">
-                <span class="cam-label">{{ cam | upper }} CAM</span>
-                <div class="cam-controls">
-                    <button class="cam-btn" onclick="openVideoModal('{{ cam }}')"><i class="fas fa-expand"></i></button>
-                </div>
-            </div>
-
             <div id="offline-{{ cam }}" class="offline-placeholder" style="display: none;">
                 <i class="fas fa-video-slash fa-2x" style="color: var(--danger); margin-bottom: 10px;"></i>
                 <p style="font-size: 0.85rem; font-weight: 500;">Camera {{ cam }} Connection Lost</p>
-                <button class="retry-btn" onclick="retryCamera('{{ cam }}')"><i class="fas fa-redo"></i> Retry Connection</button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <div class="status-badge offline" style="box-shadow: none;"><i class="fas fa-times-circle"></i> OFFLINE</div>
+                    <button class="retry-btn" onclick="retryCamera('{{ cam }}')" style="margin-top: 0;"><i class="fas fa-redo"></i> Retry</button>
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -243,8 +309,11 @@
 
     function handleCameraError(cam) {
         document.getElementById('loader-' + cam).style.display = 'none';
-        document.getElementById('status-' + cam).className = 'camera-status-badge status-offline';
-        document.getElementById('status-' + cam).innerHTML = '<i class="fas fa-times-circle"></i> OFFLINE';
+        const statusEl = document.getElementById('status-' + cam);
+        if (statusEl) {
+            statusEl.className = 'status-badge offline';
+            statusEl.innerHTML = '<i class="fas fa-times-circle"></i> OFFLINE';
+        }
         document.getElementById('offline-' + cam).style.display = 'flex';
         document.getElementById('stream-' + cam).style.display = 'none';
     }
@@ -252,8 +321,14 @@
     function retryCamera(cam) {
         document.getElementById('offline-' + cam).style.display = 'none';
         document.getElementById('loader-' + cam).style.display = 'flex';
-        document.getElementById('stream-' + cam).style.display = 'block';
-        document.getElementById('stream-' + cam).src = `/video_feed/${cam}?t=` + new Date().getTime();
+        const statusEl = document.getElementById('status-' + cam);
+        if (statusEl) {
+            statusEl.className = 'status-badge online';
+            statusEl.innerHTML = '<div class="dot"></div> LIVE';
+        }
+        const img = document.getElementById('stream-' + cam);
+        img.style.display = 'block';
+        img.src = `/video_feed/${cam}?t=` + new Date().getTime();
     }
 
     async function refreshDashboard() {
@@ -305,8 +380,8 @@
                 const statusEl = document.getElementById('status-' + cam);
                 if (statusEl) {
                     if (state.status === 'Running') {
-                        statusEl.className = 'camera-status-badge status-online';
-                        statusEl.innerHTML = '<i class="fas fa-circle" style="font-size: 0.5rem;"></i> ONLINE';
+                        statusEl.className = 'status-badge online';
+                        statusEl.innerHTML = '<div class="dot"></div> LIVE';
                         document.getElementById('offline-' + cam).style.display = 'none';
                         document.getElementById('stream-' + cam).style.display = 'block';
                     } else {
