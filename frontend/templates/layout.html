@@ -447,6 +447,15 @@
         menuToggle.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             mainContent.classList.toggle('sidebar-collapsed');
+            
+            // Rotate icon for feedback
+            const icon = menuToggle.querySelector('i');
+            if (sidebar.classList.contains('collapsed')) {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+            
             localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
         });
     }
