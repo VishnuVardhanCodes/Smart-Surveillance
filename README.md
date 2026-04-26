@@ -14,7 +14,7 @@ SmartSurveill is a high-performance, industrial-grade AI surveillance platform d
 ---
 
 ## 🚀 Enterprise Command Center Features
-
+  
 ### 🖥️ Professional UI/UX
 - **Advanced Sidebar Navigation**: Collapsible, icon-driven sidebar with professional hover effects and active state tracking.
 - **Multi-Camera Quick Access**: Top-tier control panel for starting, stopping, and monitoring individual camera nodes (Gate, Room, Parking).
